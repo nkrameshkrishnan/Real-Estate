@@ -93,17 +93,26 @@
           <h3>Listing details</h3>
           <p class="small muted">From your REALTOR.ca DDF® feed when set up, otherwise from the listing. Saved in this browser only.</p>
         </div>
+          <div class="listing-empty" id="listingEmpty" hidden>
+            <p><strong>Listing details don’t fill in from an address alone.</strong> REALTOR.ca doesn’t share listing data publicly, so the report can only read a listing you give it:</p>
+            <ol>
+              <li><a class="btn" id="realtorMapLink" href="https://www.realtor.ca/" target="_blank" rel="noopener">Find this home on REALTOR.ca</a> and open its listing.</li>
+              <li>On the listing page press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>A</kbd>, then <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>C</kbd>.</li>
+              <li><button class="linkbtn" type="button" id="openPaste">Paste it here</button>. Price, MLS® number, type, size, age, taxes, condo fee and days on market fill in.</li>
+            </ol>
+            <p class="small muted">Or type the details into the form. If you have a CREA DDF® data feed, add your proxy under Data sources and listings at an address fill in by themselves.</p>
+          </div>
           <form id="listingForm" class="form-grid">
             <label>MLS® number<input name="mls" placeholder="e.g. C12345678"></label>
-            <label>List price ($)<input name="listPrice" inputmode="numeric" placeholder="899000"></label>
+            <label>List price ($)<input name="listPrice" inputmode="numeric"></label>
             <label>Property type
               <select name="type">
                 <option value="detached">Detached</option><option value="semi">Semi-detached</option><option value="townhouse">Freehold townhouse</option><option value="condoTownhouse">Condo townhouse</option><option value="condoApt">Condo apartment</option>
               </select></label>
             <label>Year built<input name="yearBuilt" placeholder="1965, or age 31-50" title="Enter the year built, or the age range from the listing (e.g. 31-50, 100+, New)"></label>
-            <label>Living area (sq ft)<input name="sqft" inputmode="numeric" placeholder="1450"></label>
-            <label>Days on market<input name="dom" inputmode="numeric" placeholder="21"></label>
-            <label>Price reductions<input name="reductions" inputmode="numeric" placeholder="0"></label>
+            <label>Living area (sq ft)<input name="sqft" inputmode="numeric"></label>
+            <label>Days on market<input name="dom" inputmode="numeric"></label>
+            <label>Price reductions<input name="reductions" inputmode="numeric"></label>
             <label>Bedrooms<input name="beds" inputmode="numeric"></label>
             <label>Annual taxes ($)<input name="taxes" inputmode="numeric"></label>
             <label>Condo fee ($/mo)<input name="fee" inputmode="numeric"></label>
@@ -113,7 +122,7 @@
               <a class="btn ghost" id="realtorLink" href="https://www.realtor.ca/" target="_blank" rel="noopener">Open REALTOR.ca</a>
             </div>
           </form>
-          <details class="paste-box">
+          <details class="paste-box" id="listingPaste">
             <summary>Fill from a REALTOR.ca listing page</summary>
             <p class="small muted">Select all on the listing page, copy, and paste here.</p>
             <textarea id="listingPasteText" aria-label="Pasted REALTOR.ca listing text"></textarea>

@@ -57,7 +57,18 @@ export default {
         const r = await fetch(q, { headers: { Authorization: `Bearer ${token}` } });
         return cors(env, json(await r.json(), r.status));
       }
-      return cors(env, json({ ok: true, endpoints: ['/listing?mls=<MLS number>'] }));
+      if (url.pathname === '/nearby') {
+        // Active listings in a small box around a point (about ±150 m), so the site can match one to a street address
+        const lat = Number(url.searchParams.get('lat')), lon = Number(url.searchParams.get('lon'));
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return cors(env, json({ error: 'lat and lon required' }, 400));
+        const dLat = 0.0015, dLon = 0.002;
+        const token = await getToken(env);
+        const f = `Latitude ge ${lat - dLat} and Latitude le ${lat + dLat} and Longitude ge ${lon - dLon} and Longitude le ${lon + dLon}`;
+        const q = `${API}/Property?$filter=${encodeURIComponent(f)}&$top=50`;
+        const r = await fetch(q, { headers: { Authorization: `Bearer ${token}` } });
+        return cors(env, json(await r.json(), r.status));
+      }
+      return cors(env, json({ ok: true, endpoints: ['/listing?mls=<MLS number>', '/nearby?lat=<lat>&lon=<lon>'] }));
     } catch (e) {
       return cors(env, json({ error: String(e.message || e) }, 502));
     }

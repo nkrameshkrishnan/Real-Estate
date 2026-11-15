@@ -6,7 +6,7 @@ import { safetyFor } from './safety.js';
 import { schoolsNear, fraserKey, boardLocator, boardsFor, searchSchools } from './schools.js';
 import { floodCheck, powerLineCheck, radonCheck, ageRisks, vegetationCheck, guttersCheck } from './hazards.js';
 import { loadMarket, negotiate, getComps, setComps, parseCompsCsv, TYPE_LABEL } from './market.js';
-import { settings, fetchDDF, getListing, saveListing, parseListingText, yearFromAge } from './mls.js';
+import { settings, fetchDDF, findDDFByAddress, getListing, saveListing, parseListingText, yearFromAge } from './mls.js';
 
 const state = { loc: null, osm: null, hz: null, map: null, layers: null, results: {} };
 const MLS_RE = /^[A-Z]?\d{7,9}$/i;
@@ -424,6 +424,24 @@ async function runSchools() {
   try { renderSchools(await schoolsNear(state.loc, state.osm)); } catch (e) { sectionError('schools', e); }
 }
 
+// With a DDF® proxy set up, look for an active listing at this address and fill the form from it
+async function autofillFromDDF(loc) {
+  $('#listingMsg').textContent = 'Looking for an active listing at this address in your DDF® feed…';
+  try {
+    const l = await findDDFByAddress(loc);
+    if (state.loc !== loc) return;
+    if (!l) { $('#listingMsg').textContent = 'No active DDF® listing found at this address. Paste the REALTOR.ca listing or type the details.'; return; }
+    if (l.many) { $('#listingMsg').textContent = `${l.many} active listings share this street number (units in one building?). Enter the MLS® number and press Fetch from DDF®.`; return; }
+    fillForm(l); saveListing(loc, { ...getListing(loc), ...l });
+    $('#listingEmpty').hidden = true;
+    if (l.url) { $('#realtorLink').href = l.url; $('#realtorLink').textContent = 'View listing on REALTOR.ca'; }
+    $('#listingMsg').textContent = `Loaded MLS® ${l.mls} from DDF®${l.brokerage ? ' — listed by ' + l.brokerage : ''}.`;
+    renderMarket(); renderHazards();
+  } catch (e) {
+    if (state.loc === loc) $('#listingMsg').textContent = `Couldn’t reach your DDF® proxy (${e.message}). Paste the REALTOR.ca listing or type the details.`;
+  }
+}
+
 async function analyse(input, pending = null) {
   const btn = $('#goBtn');
   btn.disabled = true;
@@ -467,11 +485,17 @@ async function analyse(input, pending = null) {
     fillForm({ ...saved, ...(guessedType && typeIsDefault ? { type: guessedType } : {}), ...(pending || {}), ...(listing || {}) });
     if (pending) saveListing(loc, { ...saved, ...pending });
     if (listing) saveListing(loc, { ...getListing(loc), ...listing });
+    // REALTOR.ca map centred on this address, for finding the listing to paste
+    const box = (dLat, dLon) => `LatitudeMax=${(loc.lat + dLat).toFixed(5)}&LongitudeMax=${(loc.lon + dLon).toFixed(5)}&LatitudeMin=${(loc.lat - dLat).toFixed(5)}&LongitudeMin=${(loc.lon - dLon).toFixed(5)}`;
+    $('#realtorMapLink').href = loc.listingUrl || `https://www.realtor.ca/map#ZoomLevel=17&Center=${loc.lat.toFixed(6)}%2C${loc.lon.toFixed(6)}&${box(0.004, 0.008)}&Sort=6-D&PropertyTypeGroupID=1&TransactionTypeId=2&PropertySearchTypeId=0&Currency=CAD`;
+    const hasDetails = !!(listing || pending || saved.listPrice || saved.mls);
+    $('#listingEmpty').hidden = hasDetails;
     $('#listingMsg').textContent = listing ? `Loaded MLS® ${listing.mls} from DDF®${listing.brokerage ? ' — listed by ' + listing.brokerage : ''}.`
       : pending ? `Read MLS® ${pending.mls || ''} from the pasted listing${pending.brokerage ? ' — listed by ' + pending.brokerage.replace(/\.$/, '') : ''}.${pending.sqftRange ? ` Size given as ${pending.sqftRange} sq ft; using the midpoint.` : ''}${pending.yearBuiltNote ? ' ' + pending.yearBuiltNote : ''}`
       : guessedType && typeIsDefault ? 'Looks like a condo unit — property type set to Condo apartment. Paste the listing to fill in the rest.' : '';
     initMap(loc);
     status('');
+    if (!hasDetails && settings.get().ddfProxy) autofillFromDDF(loc);
     document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     const safetyP = safetyFor(loc);
@@ -521,6 +545,7 @@ $('#listingForm').addEventListener('submit', e => {
   if (!state.loc) return;
   saveListing(state.loc, listingFromForm());
   $('#listingMsg').textContent = 'Saved. Report updated.';
+  if ($('#listingForm').listPrice.value) $('#listingEmpty').hidden = true;
   renderMarket(); renderHazards();
 });
 $('#ddfBtn').addEventListener('click', async () => {
@@ -531,6 +556,7 @@ $('#ddfBtn').addEventListener('click', async () => {
     const l = await fetchDDF(mls);
     fillForm(l); saveListing(state.loc, { ...listingFromForm() });
     $('#listingMsg').textContent = `Loaded MLS® ${l.mls}.`;
+    $('#listingEmpty').hidden = true;
     renderMarket(); renderHazards();
   } catch (e) { $('#listingMsg').textContent = e.message; }
 });
@@ -549,7 +575,15 @@ $('#listingPasteBtn').addEventListener('click', () => {
   fillForm(p); saveListing(state.loc, { ...listingFromForm() });
   if (p.url) { $('#realtorLink').href = p.url; $('#realtorLink').textContent = 'View listing on REALTOR.ca'; }
   $('#listingMsg').textContent = `Filled ${fields.length} fields from the listing${p.mls ? ` (MLS® ${p.mls})` : ''}.${p.sqftRange ? ` Size given as ${p.sqftRange} sq ft; using the midpoint.` : ''}${p.yearBuiltNote ? ' ' + p.yearBuiltNote : ''}`;
+  $('#listingEmpty').hidden = true; $('#listingPaste').open = false; $('#listingPasteText').value = '';
   renderMarket(); renderHazards();
+});
+// Reading starts as soon as something is pasted; no extra click needed
+$('#listingPasteText').addEventListener('paste', () => setTimeout(() => $('#listingPasteBtn').click(), 0));
+$('#openPaste').addEventListener('click', () => {
+  const box = $('#listingPaste'); box.open = true;
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('#listingPasteText').focus({ preventScroll: true });
 });
 $('#shareBtn').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(location.href); $('#shareBtn').textContent = 'Copied'; } catch { prompt('Copy this link', location.href); }

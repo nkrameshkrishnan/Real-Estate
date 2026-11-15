@@ -45,6 +45,21 @@ export function normalizeDDF(p) {
   };
 }
 
+// Find the active DDF® listing at a geocoded address: listings near the point, matched on street number (and unit)
+export async function findDDFByAddress(loc) {
+  const { ddfProxy } = settings.get();
+  if (!ddfProxy) return null;
+  const d = await fetchJSON(`${ddfProxy.replace(/\/$/, '')}/nearby?lat=${loc.lat}&lon=${loc.lon}`, {}, 20000);
+  const recs = d.value || [];
+  const num = String(loc.address?.house_number || '').toLowerCase();
+  const unit = String(loc.unit || '').toLowerCase();
+  const norm = v => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const street = norm(loc.address?.road).slice(0, 6);
+  const hits = recs.filter(r => num && String(r.StreetNumber || '').toLowerCase() === num && (!street || norm(r.StreetName).startsWith(street.slice(0, 4)) || norm(r.UnparsedAddress).includes(street)));
+  const best = (unit && hits.find(r => norm(r.UnitNumber) === norm(unit))) || (hits.length === 1 ? hits[0] : null);
+  return best ? normalizeDDF(best) : (hits.length > 1 ? { many: hits.length } : null);
+}
+
 export async function fetchDDF(mls) {
   const { ddfProxy } = settings.get();
   if (!ddfProxy) throw new Error('No DDF® proxy configured. Open “Data sources & settings” to add one.');
