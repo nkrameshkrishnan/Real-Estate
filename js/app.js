@@ -1,5 +1,5 @@
 import { $, esc, fmtMoney, fmtDist, badge, store } from './util.js';
-import { resolveLocation } from './geocode.js';
+import { resolveLocation, LookupUnavailable } from './geocode.js';
 import { fetchTransitSchools, fetchHazardsOSM } from './overpass.js';
 import { scoreTransit } from './transit.js';
 import { safetyFor } from './safety.js';
@@ -18,8 +18,17 @@ const VERDICT = { good: 'Good', ok: 'Fair', warn: 'Check', bad: 'High priority',
 const sym = name => `<svg class="sym" aria-hidden="true"><use href="#sym-${name}"/></svg>`;
 
 // ---------- status ----------
-function status(msg, isErr = false) {
-  $('#status').innerHTML = msg ? `<div class="msg ${isErr ? 'err' : ''}">${esc(msg)}</div>` : '';
+function status(msg, isErr = false, action = null) {
+  $('#status').innerHTML = msg ? `<div class="msg ${isErr ? 'err' : ''}"><span>${esc(msg)}</span>${action ? `<button class="btn" type="button" data-status-action>${esc(action.label)}</button>` : ''}</div>` : '';
+  if (action) $('#status [data-status-action]').onclick = action.run;
+}
+// Turn raw network errors into a message that says what happened and what to do
+function friendlyError(e) {
+  if (e instanceof LookupUnavailable || e?.name === 'AbortError' || e instanceof TypeError) {
+    return 'The free address lookup didn’t answer (it’s a shared public service and gets busy). Wait a few seconds and try again. Including the city and postal code helps it find a match.';
+  }
+  if (/HTTP (429|5\d\d)/.test(e?.message || '')) return 'A data service is busy right now. Wait a few seconds and try again.';
+  return e?.message || String(e);
 }
 
 // ---------- recent searches ----------
@@ -86,6 +95,7 @@ function mapAdd(name, fn) {
 // ---------- score tiles ----------
 const tiles = {};
 let shownTiles = {};
+let slowNote = false, slowTimer = null;
 const TILE_KEYS = ['transit', 'safety', 'schools', 'market', 'hazards'];
 const TILE_NAMES = { transit: 'Transit', safety: 'Safety', schools: 'Schools', market: 'Market value', hazards: 'Hazards' };
 // verdict: text for the status chip; pass '' for none, undefined for the default wording of the level
@@ -95,7 +105,7 @@ function tile(key, label, value, sub, level, href, verdict) {
   renderTiles();
 }
 function renderTiles() {
-  const html = TILE_KEYS.map(k => tiles[k] || `<div class="score unknown loading" data-layer="${k}">${sym(SYM[k])}<span class="k">${TILE_NAMES[k]}</span><span class="v"><i class="pulse"></i><span class="sr-only">Loading</span></span><span class="s">Checking…</span></div>`);
+  const html = TILE_KEYS.map(k => tiles[k] || `<div class="score unknown loading" data-layer="${k}">${sym(SYM[k])}<span class="k">${TILE_NAMES[k]}</span><span class="v"><i class="pulse"></i><span class="sr-only">Loading</span></span><span class="s">${slowNote ? 'Still waiting for OpenStreetMap. This can take up to a minute.' : 'Checking…'}</span></div>`);
   const box = $('#scores');
   const active = document.activeElement?.closest?.('#scores [data-layer]')?.dataset.layer;
   box.innerHTML = html.join('');
@@ -120,7 +130,8 @@ function section(id, html) {
   b.classList.remove('enter'); void b.offsetWidth; b.classList.add('enter');
 }
 function sectionError(id, e, retry) {
-  section(id, `<p>${badge('unknown', 'Unavailable')} ${esc(e.message || e)}</p><p class="small muted">The free OpenStreetMap servers are sometimes overloaded. Results are cached for 14 days once they load.</p>${retry ? '<button class="btn" type="button" data-retry>Retry</button>' : ''}`);
+  const msg = /busy|HTTP|abort|fetch|timed out|network/i.test(`${e?.name} ${e?.message}`) ? 'The map-data service didn’t answer in time.' : (e.message || String(e));
+  section(id, `<p>${badge('unknown', 'Unavailable')} ${esc(msg)}</p><p class="small muted">This uses the free OpenStreetMap servers, which are sometimes overloaded. Retrying usually works within a minute, and results are kept for 14 days once they load.</p>${retry ? '<button class="btn" type="button" data-retry>Retry</button>' : ''}`);
   const b = document.querySelector(`#${id} [data-retry]`);
   if (b && retry) b.onclick = () => { section(id, '<div class="skeleton"></div>'); retry(); };
 }
@@ -365,7 +376,9 @@ async function analyse(input, pending = null) {
     $('#realtorLink').href = loc.listingUrl || 'https://www.realtor.ca/';
     $('#realtorLink').textContent = loc.listingUrl ? 'View listing on REALTOR.ca' : 'Open REALTOR.ca';
     ['transit', 'safety', 'schools', 'market', 'hazards'].forEach(id => { $(`#${id} .body`).innerHTML = '<div class="skeleton"></div>'; });
-    shownTiles = {}; renderTiles();
+    shownTiles = {}; slowNote = false; renderTiles();
+    clearTimeout(slowTimer);
+    slowTimer = setTimeout(() => { if (state.loc === loc) { slowNote = true; renderTiles(); } }, 20000);
     $('#listingForm').reset();
     const saved = getListing(loc);
     const guessedType = (loc.unit || /apartments|condo/i.test(loc.osmBuildingType)) ? 'condoApt' : null;
@@ -412,7 +425,8 @@ async function analyse(input, pending = null) {
     loadTransit();
     loadHazards();
   } catch (e) {
-    status(e.message || String(e), true);
+    const retryable = e instanceof LookupUnavailable || e?.name === 'AbortError' || e instanceof TypeError || /HTTP (429|5\d\d)/.test(e?.message || '');
+    status(friendlyError(e), true, retryable ? { label: 'Try again', run: () => analyse(input, pending) } : null);
   } finally {
     btn.disabled = false;
   }
