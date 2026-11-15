@@ -11,6 +11,11 @@ import { settings, fetchDDF, getListing, saveListing, parseListingText, yearFrom
 const state = { loc: null, osm: null, hz: null, map: null, layers: null, results: {} };
 const MLS_RE = /^[A-Z]?\d{7,9}$/i;
 const EXAMPLE = '25 The Esplanade, Toronto';
+// Map inks: one legend keys every symbol on the map, in the legend rows and in the section headings
+const INK = { ink: '#151a17', magenta: '#b4237a', water: '#2c74b3' };
+const SYM = { transit: 'transit', safety: 'safety', schools: 'schools', market: 'market', hazards: 'hazards' };
+const VERDICT = { good: 'Good', ok: 'Fair', warn: 'Check', bad: 'High priority', unknown: 'No data yet' };
+const sym = name => `<svg class="sym" aria-hidden="true"><use href="#sym-${name}"/></svg>`;
 
 // ---------- status ----------
 function status(msg, isErr = false) {
@@ -33,14 +38,41 @@ function initMap(loc) {
   if (!state.map) {
     state.map = L.map('map', { scrollWheelZoom: false });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(state.map);
+    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(state.map);
+    state.map.on('moveend zoomend resize', drawTicks);
   }
   state.layers?.remove();
   state.sub = {};
   state.layers = L.layerGroup().addTo(state.map);
-  L.circle([loc.lat, loc.lon], { radius: 500, color: '#1f5f8b', weight: 1, fillOpacity: 0.04 }).addTo(state.layers);
-  L.circleMarker([loc.lat, loc.lon], { radius: 9, color: '#fff', weight: 2, fillColor: '#b3261e', fillOpacity: 1 }).bindPopup(esc(loc.display)).addTo(state.layers);
+  L.circle([loc.lat, loc.lon], { radius: 500, color: INK.magenta, weight: 2, dashArray: '5 5', fillColor: INK.magenta, fillOpacity: 0.035, className: 'lyr-safety' }).addTo(state.layers);
+  L.circleMarker([loc.lat, loc.lon], { radius: 11, color: INK.magenta, weight: 3, fillColor: '#fff', fillOpacity: 1, className: 'lyr-home' }).addTo(state.layers);
+  L.circleMarker([loc.lat, loc.lon], { radius: 4, stroke: false, fillColor: INK.magenta, fillOpacity: 1, className: 'lyr-home' }).bindPopup(esc(loc.display)).addTo(state.layers);
   state.map.setView([loc.lat, loc.lon], 15);
-  setTimeout(() => state.map.invalidateSize(), 50);
+  setTimeout(() => { state.map.invalidateSize(); drawTicks(); }, 50);
+}
+// Coordinate ticks on the neat line, like the margin of a map sheet: a tick every 0.005° (0.01° when zoomed out), labelled at the ends
+function drawTicks() {
+  const wrap = $('#mapWrap'), m = state.map; if (!wrap || !m) return;
+  let svg = wrap.querySelector('.grid-ticks');
+  if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'grid-ticks'); svg.setAttribute('aria-hidden', 'true'); wrap.appendChild(svg); }
+  const b = m.getBounds(), size = m.getSize(), off = 8; // map sits 8px inside the frame (2px border + 6px padding)
+  const step = m.getZoom() >= 15 ? 0.005 : m.getZoom() >= 13 ? 0.01 : 0.05;
+  const fmt = (v, pos, neg) => `${Math.abs(v).toFixed(3)}° ${v >= 0 ? pos : neg}`;
+  let out = '';
+  const lons = [], lats = [];
+  for (let x = Math.ceil(b.getWest() / step) * step; x <= b.getEast(); x += step) lons.push(x);
+  for (let y = Math.ceil(b.getSouth() / step) * step; y <= b.getNorth(); y += step) lats.push(y);
+  lons.forEach((lon, i) => {
+    const px = m.latLngToContainerPoint([b.getNorth(), lon]).x + off;
+    out += `<path d="M${px} ${off}v9M${px} ${off + size.y}v-9"/>`;
+    if (i === 1) out += `<text x="${px + 4}" y="${off + 19}">${fmt(lon, 'E', 'W')}</text>`;
+  });
+  lats.forEach((lat, i) => {
+    const py = m.latLngToContainerPoint([lat, b.getWest()]).y + off;
+    out += `<path d="M${off} ${py}h9M${off + size.x} ${py}h-9"/>`;
+    if (i === lats.length - 2) out += `<text x="${off + 13}" y="${py + 4}">${fmt(lat, 'N', 'S')}</text>`;
+  });
+  svg.innerHTML = out;
 }
 // Named sub-layers so re-renders replace (not duplicate) markers
 function mapAdd(name, fn) {
@@ -53,12 +85,40 @@ function mapAdd(name, fn) {
 
 // ---------- score tiles ----------
 const tiles = {};
-function tile(key, label, value, sub, level, href) {
-  tiles[key] = `<a class="score ${level}" href="#${href}"><div class="k">${esc(label)}</div><div class="v">${value}</div><div class="s">${sub}</div></a>`;
-  $('#scores').innerHTML = ['transit', 'safety', 'schools', 'market', 'hazards'].map(k => tiles[k] || `<div class="score unknown"><div class="k">${k[0].toUpperCase() + k.slice(1)}</div><div class="v">…</div><div class="s muted">Loading</div></div>`).join('');
+let shownTiles = {};
+const TILE_KEYS = ['transit', 'safety', 'schools', 'market', 'hazards'];
+const TILE_NAMES = { transit: 'Transit', safety: 'Safety', schools: 'Schools', market: 'Market value', hazards: 'Hazards' };
+// verdict: text for the status chip; pass '' for none, undefined for the default wording of the level
+function tile(key, label, value, sub, level, href, verdict) {
+  const chip = verdict === '' ? '' : `<span class="verdict">${esc(verdict ?? VERDICT[level] ?? '')}</span>`;
+  tiles[key] = `<a class="score ${level}" href="#${href}" data-layer="${key}">${sym(SYM[key])}<span class="k">${esc(label)}</span><span class="v">${value}</span><span class="s">${chip}<span>${sub}</span></span></a>`;
+  renderTiles();
 }
+function renderTiles() {
+  const html = TILE_KEYS.map(k => tiles[k] || `<div class="score unknown loading" data-layer="${k}">${sym(SYM[k])}<span class="k">${TILE_NAMES[k]}</span><span class="v"><i class="pulse"></i><span class="sr-only">Loading</span></span><span class="s">Checking…</span></div>`);
+  const box = $('#scores');
+  const active = document.activeElement?.closest?.('#scores [data-layer]')?.dataset.layer;
+  box.innerHTML = html.join('');
+  // Rows whose result just changed settle in; untouched rows stay still
+  TILE_KEYS.forEach((k, i) => { if (tiles[k] && shownTiles[k] !== tiles[k]) box.children[i].classList.add('fresh'); });
+  shownTiles = { ...tiles };
+  if (active) box.querySelector(`[data-layer="${active}"]`)?.focus();
+}
+// Signature: pointing at a legend row shows only that check's layer on the map
+function focusLayer(name) {
+  const w = $('#mapWrap');
+  if (name) w.dataset.focus = name; else delete w.dataset.focus;
+}
+$('#scores').addEventListener('pointerover', e => focusLayer(e.target.closest('[data-layer]')?.dataset.layer));
+$('#scores').addEventListener('pointerleave', () => focusLayer(null));
+$('#scores').addEventListener('focusin', e => focusLayer(e.target.closest('[data-layer]')?.dataset.layer));
+$('#scores').addEventListener('focusout', () => focusLayer(null));
 
-function section(id, html) { $(`#${id} .body`).innerHTML = html; }
+function section(id, html) {
+  const b = $(`#${id} .body`);
+  b.innerHTML = html;
+  b.classList.remove('enter'); void b.offsetWidth; b.classList.add('enter');
+}
 function sectionError(id, e, retry) {
   section(id, `<p>${badge('unknown', 'Unavailable')} ${esc(e.message || e)}</p><p class="small muted">The free OpenStreetMap servers are sometimes overloaded. Results are cached for 14 days once they load.</p>${retry ? '<button class="btn" type="button" data-retry>Retry</button>' : ''}`);
   const b = document.querySelector(`#${id} [data-retry]`);
@@ -80,7 +140,7 @@ function renderTransit(t) {
     ${rapid}
     ${routes ? `<h4 class="small" style="margin-top:12px">Routes serving stops within 500 m</h4><div class="routes">${routes}</div>` : ''}
     <p class="sub">Score = rapid-transit proximity (max 40) + number of routes (30) + nearby stops (20) + terminals/multiple stations (10), from OpenStreetMap data. Frequency/schedules are not included yet (next step: GTFS feeds from TTC, GO, YRT, MiWay, Brampton Transit).</p>`);
-  mapAdd('transit', g => t.rapid.forEach(s => L.circleMarker([s.lat, s.lon], { radius: 7, color: '#fff', weight: 2, fillColor: '#6a3fa0', fillOpacity: 1 }).bindPopup(`${esc(s.name)} (${esc(s.mode)}) — ${fmtDist(s.d)}`).addTo(g)));
+  mapAdd('transit', g => t.rapid.forEach(s => L.circleMarker([s.lat, s.lon], { radius: 6, color: INK.ink, weight: 2.5, fillColor: '#fff', fillOpacity: 1, className: 'lyr-transit' }).bindPopup(`${esc(s.name)} (${esc(s.mode)}) — ${fmtDist(s.d)}`).addTo(g)));
 }
 
 // ---------- SAFETY ----------
@@ -110,7 +170,7 @@ function schoolRow(s) {
   const f = s.fraser;
   const loc = boardLocator(s.board);
   const fraserCell = f
-    ? `<strong>${esc(Number(f.rating).toFixed(1))}</strong>/10${f.trend ? `<span class="trend ${f.trend}" title="5-year trend">${f.trend === 'up' ? '▲' : '▼'}</span>` : ''}${f.rank ? `<div class="sub">Rank ${esc(f.rank)}</div>` : ''}${f.rating5 != null && f.rating5 !== '' ? `<div class="sub">5-yr avg ${esc(Number(f.rating5).toFixed(1))}</div>` : ''}<div class="sub">${f.source === 'you' ? 'entered by you' : f.source === 'fraser' ? 'Fraser 2025' : 'from data file'}</div>`
+    ? `<strong>${esc(Number(f.rating).toFixed(1))}</strong>/10${f.trend ? `<svg class="trend ${f.trend}" role="img" aria-label="5-year trend ${f.trend}"><title>5-year trend ${f.trend}</title><use href="#sym-${f.trend}"/></svg>` : ''}${f.rank ? `<div class="sub">Rank ${esc(f.rank)}</div>` : ''}${f.rating5 != null && f.rating5 !== '' ? `<div class="sub">5-yr avg ${esc(Number(f.rating5).toFixed(1))}</div>` : ''}<div class="sub">${f.source === 'you' ? 'entered by you' : f.source === 'fraser' ? 'Fraser 2025' : 'from data file'}</div>`
     : `<span class="sub">${s.isPrivate ? 'Not ranked' : 'Not in Fraser report'}</span>`;
   return `<tr>
     <td><strong>${esc(s.name)}</strong>
@@ -125,6 +185,12 @@ function schoolRow(s) {
 
 function renderSchools(r) {
   const all = [...r.elementary, ...r.secondary];
+  // With no map data yet, an empty list means "not loaded", not "no schools"
+  if (!r.osmAvailable && !all.length && !r.other.length) {
+    tile('schools', 'Schools', '—', 'Loads with the map data', 'unknown', 'schools', 'Waiting for map data');
+    section('schools', `<p>${badge('unknown', 'Waiting for map data')} School locations come from OpenStreetMap, which hasn’t answered yet. They appear here as soon as it does; if Transit shows a Retry button, retrying it loads schools too.</p>`);
+    return;
+  }
   const rated = all.filter(s => s.fraser?.rating);
   const best = rated.sort((a, b) => b.fraser.rating - a.fraser.rating)[0];
   tile('schools', 'Schools', `${r.elementary.length + r.secondary.length}`, best ? `Top Fraser: ${Number(best.fraser.rating).toFixed(1)} (${esc(best.name)})` : `${r.elementary.length} elementary · ${r.secondary.length} secondary within 3 km`, rated.length ? (best.fraser.rating >= 7 ? 'good' : best.fraser.rating >= 5.5 ? 'ok' : 'warn') : 'unknown', 'schools');
@@ -133,9 +199,9 @@ function renderSchools(r) {
     <div class="callout"><strong>Nearest is not always designated.</strong> Attendance boundaries are set by each board (public, Catholic, French-language). Confirm with the board’s address lookup${r.elementary.some(s => /toronto dsb/i.test(s.board)) ? ' — e.g. <a href="https://www.tdsb.on.ca/Find-your/School/By-Home-Address" target="_blank" rel="noopener">TDSB Find your school</a>' : ''} or the <a href="https://www.ontario.ca/page/find-your-school" target="_blank" rel="noopener">Ontario school information finder</a>.</div>
     ${table('Elementary', r.elementary)}${table('Secondary', r.secondary)}${table('Other / unclassified', r.other)}
     ${!all.length && !r.other.length ? '<p class="muted">No schools mapped within 3 km.</p>' : ''}
-    <p class="sub">Fraser ratings (0–10, rank, 5-year average and trend ▲▼): ${r.fraserMeta?.source ? `<a href="${esc(r.fraserMeta.elementaryUrl)}" target="_blank" rel="noopener">${esc(r.fraserMeta.source)}</a>` : 'Fraser Institute'} — see full school profiles on <a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener">compareschoolrankings.org</a>. Schools without a Grade 3/6 (elementary) or Grade 9/OSSLT (secondary) EQAO result, and most private schools, aren’t ranked. School list: ${esc(r.meta?.source || '')} (${esc(r.meta?.licence || '')}).</p>`);
+    <p class="sub">Fraser ratings (0–10, rank, 5-year average and trend <svg class="trend up" aria-hidden="true"><use href="#sym-up"/></svg><svg class="trend down" aria-hidden="true"><use href="#sym-down"/></svg>): ${r.fraserMeta?.source ? `<a href="${esc(r.fraserMeta.elementaryUrl)}" target="_blank" rel="noopener">${esc(r.fraserMeta.source)}</a>` : 'Fraser Institute'} — see full school profiles on <a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener">compareschoolrankings.org</a>. Schools without a Grade 3/6 (elementary) or Grade 9/OSSLT (secondary) EQAO result, and most private schools, aren’t ranked. School list: ${esc(r.meta?.source || '')} (${esc(r.meta?.licence || '')}).</p>`);
   $$fraser();
-  mapAdd('schools', g => all.concat(r.other).forEach(s => L.circleMarker([s.lat, s.lon], { radius: 6, color: '#fff', weight: 1.5, fillColor: '#2f6f9f', fillOpacity: 1 }).bindPopup(`<strong>${esc(s.name)}</strong><br>${esc(s.level)} · ${fmtDist(s.d)}${s.fraser ? `<br>Fraser ${esc(s.fraser.rating)}/10` : ''}`).addTo(g)));
+  mapAdd('schools', g => all.concat(r.other).forEach(s => L.marker([s.lat, s.lon], { icon: L.divIcon({ className: 'mk-school', iconSize: [11, 11] }), keyboard: false }).bindPopup(`<strong>${esc(s.name)}</strong><br>${esc(s.level)} · ${fmtDist(s.d)}${s.fraser ? `<br>Fraser ${esc(s.fraser.rating)}/10` : ''}`).addTo(g)));
 }
 function $$fraser() {
   document.querySelectorAll('.fraser-form').forEach(f => f.addEventListener('submit', e => {
@@ -160,6 +226,17 @@ function fillForm(l) {
   for (const k of ['mls', 'listPrice', 'type', 'yearBuilt', 'sqft', 'dom', 'reductions', 'beds', 'taxes', 'fee']) if (f[k] && l[k] != null) f[k].value = l[k];
 }
 
+// Negotiation range drawn like a map scale bar: the filled run is opening offer to walk-away, the magenta tick is the target
+function scaleBar(n) {
+  if (![n.opening, n.target, n.walkAway].every(isFinite) || n.walkAway <= n.opening) return '';
+  const lo = n.opening - (n.walkAway - n.opening) * 0.04, hi = n.walkAway + (n.walkAway - n.opening) * 0.04;
+  const pos = v => ((v - lo) / (hi - lo) * 100).toFixed(2);
+  return `<figure class="scalebar" aria-label="Negotiation range from ${fmtMoney(n.opening)} to ${fmtMoney(n.walkAway)}, target ${fmtMoney(n.target)}">
+      <div class="bar"><span class="seg" style="left:${pos(n.opening)}%;right:${(100 - pos(n.walkAway)).toFixed(2)}%"></span><span class="mk" style="left:${pos(n.target)}%"></span></div>
+      <div class="ticks" aria-hidden="true"><span style="left:${pos(n.opening)}%">Open <b>${fmtMoney(n.opening)}</b></span><span style="left:${pos(n.target)}%">Target <b>${fmtMoney(n.target)}</b></span><span style="left:${pos(n.walkAway)}%">Walk away <b>${fmtMoney(n.walkAway)}</b></span></div>
+    </figure>`;
+}
+
 async function renderMarket() {
   const loc = state.loc, l = listingFromForm();
   let market;
@@ -168,9 +245,9 @@ async function renderMarket() {
   const cond = store.get('marketCondition', '');
   const n = negotiate({ ...l, condition: cond || undefined, comps, market });
   const typeAvg = market?.averagePrice?.[l.type];
-  if (isFinite(n.fair)) tile('market', 'Comps-based value', fmtMoney(n.fair), `Target offer ${fmtMoney(n.target)} · ${esc(n.confidence)} confidence`, n.confidence === 'high' ? 'good' : n.confidence === 'medium' ? 'ok' : 'unknown', 'market');
-  else if (isFinite(n.target)) tile('market', 'Target offer', fmtMoney(n.target), `List ${fmtMoney(l.listPrice)} · add comps for a value estimate`, 'unknown', 'market');
-  else tile('market', 'Market value', '—', 'Paste the listing to get started', 'unknown', 'market');
+  if (isFinite(n.fair)) tile('market', 'Comps-based value', fmtMoney(n.fair), `Target offer ${fmtMoney(n.target)}`, n.confidence === 'high' ? 'good' : n.confidence === 'medium' ? 'ok' : 'unknown', 'market', `${n.confidence} confidence`);
+  else if (isFinite(n.target)) tile('market', 'Target offer', fmtMoney(n.target), `List ${fmtMoney(l.listPrice)}. Add comps for a value estimate`, 'unknown', 'market', 'Estimate');
+  else tile('market', 'Market value', '—', 'Add the list price or paste the listing', 'unknown', 'market', 'Needs listing');
   section('market', `
     <div class="kpis">
       <div class="kpi"><div class="v">${fmtMoney(typeAvg)}</div><div class="k">${esc(market?.area || 'Board')} avg. ${esc(TYPE_LABEL[l.type] || '')} · ${esc(market?.period || '')}</div></div>
@@ -180,6 +257,7 @@ async function renderMarket() {
       ${l.fee ? `<div class="kpi"><div class="v">${fmtMoney(l.fee)}</div><div class="k">condo fee / month${l.sqft ? ` ($${(l.fee / l.sqft).toFixed(2)}/sq ft)` : ''}</div></div>` : ''}
       ${l.taxes ? `<div class="kpi"><div class="v">${fmtMoney(l.taxes)}</div><div class="k">annual property taxes</div></div>` : ''}
     </div>
+    ${scaleBar(n)}
     <div class="offer">
       <div><div class="k">Opening offer</div><div class="v">${fmtMoney(n.opening)}</div></div>
       <div class="target"><div class="k">Target price</div><div class="v">${fmtMoney(n.target)}</div></div>
@@ -224,7 +302,7 @@ async function renderHazards() {
     parts.push(hazardCard('Overhead power lines', p.level, p.label, `
       ${p.lines.length ? `<ul class="small">${p.lines.slice(0, 4).map(x => `<li>${x.kind === 'line' ? 'Transmission line' : 'Distribution line'}${x.voltage ? ` (${esc(x.voltage.split(';').map(v => Math.round(v / 1000) + ' kV').join(', '))})` : ''}${x.operator ? ` — ${esc(x.operator)}` : ''}: ${fmtDist(x.d)}</li>`).join('')}${p.nearestSub ? `<li>Substation: ${fmtDist(p.nearestSub.d)}</li>` : ''}</ul>` : ''}
       <p class="sub">From OpenStreetMap; local pole-mounted distribution lines are often not mapped, so look at the street. Hydro corridors can affect resale appeal, noise and tree-trimming access.</p>`));
-    mapAdd('hazards', g => { p.lines.forEach(x => L.polyline(x.pts, { color: '#d9480f', weight: x.kind === 'line' ? 4 : 2, opacity: .85 }).bindPopup(`${x.kind === 'line' ? 'Transmission' : 'Distribution'} line ${x.voltage ? esc(x.voltage) + ' V' : ''}`).addTo(g)); osm.water.forEach(w => w.pts.length > 1 && L.polyline(w.pts, { color: '#1c7ed6', weight: 3, opacity: .7 }).bindPopup(esc(w.name)).addTo(g)); });
+    mapAdd('hazards', g => { p.lines.forEach(x => L.polyline(x.pts, { color: INK.ink, weight: x.kind === 'line' ? 3 : 2, opacity: .9, dashArray: '7 4', className: 'lyr-hazards' }).bindPopup(`${x.kind === 'line' ? 'Transmission' : 'Distribution'} line ${x.voltage ? esc(x.voltage) + ' V' : ''}`).addTo(g)); osm.water.forEach(w => w.pts.length > 1 && L.polyline(w.pts, { color: INK.water, weight: 3, opacity: .85, className: 'lyr-hazards' }).bindPopup(esc(w.name)).addTo(g)); });
   }
   if (r.radon) {
     const d = r.radon;
@@ -246,7 +324,8 @@ async function renderHazards() {
 
   const flagged = parts.filter(p => /badge (bad|warn)/.test(p)).length;
   const severe = parts.filter(p => /badge bad/.test(p)).length;
-  tile('hazards', 'Hazard flags', `${flagged}`, severe ? `${severe} high-priority` : flagged ? 'Worth checking' : 'None flagged so far', severe ? 'bad' : flagged ? 'warn' : 'good', 'hazards');
+  const pending = parts.filter(p => /Checking…|Map data busy/.test(p)).length;
+  tile('hazards', 'Hazard flags', `${flagged}`, severe ? `${severe} high-priority` : flagged ? 'Worth checking' : pending ? `None flagged; ${pending} still checking` : 'None flagged', severe ? 'bad' : flagged ? 'warn' : pending ? 'unknown' : 'good', 'hazards', !severe && !flagged && pending ? 'In progress' : undefined);
 }
 
 // ---------- orchestration ----------
@@ -277,14 +356,16 @@ async function analyse(input, pending = null) {
     history.replaceState(null, '', `#q=${encodeURIComponent(input.trim())}`);
 
     $('#report').hidden = false;
+    document.body.classList.add('has-report');
     const a = loc.address || {};
     $('#locTitle').textContent = listing?.address || pending?.address || ((loc.unit ? `Unit ${loc.unit}, ` : '') + (a.road ? [a.house_number, a.road].filter(Boolean).join(' ') : loc.display.split(',')[0]));
-    $('#locMuni').textContent = [loc.municipality, loc.county].filter(Boolean).join(' · ');
-    $('#locMeta').textContent = `${loc.display} · ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}`;
+    $('#locMuni').textContent = [loc.municipality, loc.county].filter(Boolean).join(' · ') || loc.display;
+    const place = [a.neighbourhood || a.quarter || a.suburb, a.postcode].filter(Boolean).join(' · ');
+    $('#locMeta').innerHTML = `<b>${Math.abs(loc.lat).toFixed(5)}° ${loc.lat >= 0 ? 'N' : 'S'}&ensp;${Math.abs(loc.lon).toFixed(5)}° ${loc.lon >= 0 ? 'E' : 'W'}</b>${place ? `&ensp;${esc(place)}` : ''}`;
     $('#realtorLink').href = loc.listingUrl || 'https://www.realtor.ca/';
     $('#realtorLink').textContent = loc.listingUrl ? 'View listing on REALTOR.ca' : 'Open REALTOR.ca';
-    ['transit', 'safety', 'schools', 'market', 'hazards'].forEach(id => section(id, '<div class="skeleton"></div>'));
-    tile('transit', 'Transit score', '…', 'Loading', 'unknown', 'transit');
+    ['transit', 'safety', 'schools', 'market', 'hazards'].forEach(id => { $(`#${id} .body`).innerHTML = '<div class="skeleton"></div>'; });
+    shownTiles = {}; renderTiles();
     $('#listingForm').reset();
     const saved = getListing(loc);
     const guessedType = (loc.unit || /apartments|condo/i.test(loc.osmBuildingType)) ? 'condoApt' : null;
@@ -382,6 +463,35 @@ $('#shareBtn').addEventListener('click', async () => {
 });
 $('#settingsBtn').addEventListener('click', () => { $('#ddfProxy').value = settings.get().ddfProxy || ''; $('#settingsDlg').showModal(); });
 $('#saveSettings').addEventListener('click', () => settings.set({ ...settings.get(), ddfProxy: $('#ddfProxy').value.trim() }));
+
+// ---------- landing: contour field behind the title block ----------
+function drawContours() {
+  const svg = $('#contours'); if (!svg) return;
+  const NS = 'http://www.w3.org/2000/svg', cx = 360, cy = 250;
+  const ring = (r, i) => {
+    const pts = [];
+    for (let k = 0; k <= 96; k++) {
+      const t = k / 96 * Math.PI * 2;
+      const rr = r * (1 + 0.16 * Math.sin(3 * t + 0.6 + i * 0.07) + 0.08 * Math.sin(5 * t + 1.9 - i * 0.05) + 0.05 * Math.cos(2 * t + i * 0.11));
+      pts.push([cx + rr * Math.cos(t) * 1.25, cy + rr * Math.sin(t)]);
+    }
+    return 'M' + pts.map(p => p.map(v => v.toFixed(1)).join(' ')).join('L') + 'Z';
+  };
+  let html = '';
+  for (let i = 0; i < 16; i++) {
+    const r = 24 + i * 19, index = i % 5 === 4;
+    html += `<path class="c${index ? ' index' : ''}" d="${ring(r, i)}" style="--d:${i * 45}ms"/>`;
+    if (index) html += `<text class="lbl" x="${cx + r * 1.25 * 0.72}" y="${cy - r * 0.62}">${100 + (i + 1) * 5}</text>`;
+  }
+  html += `<path class="creek" d="M-10 470 C 80 440, 120 400, 190 405 S 300 470, 360 500 S 470 520, 620 470" style="--d:300ms"/>`;
+  for (let x = 60; x < 600; x += 60) html += `<path class="tick" d="M${x} 0v10M${x} 520v-10"/>`;
+  for (let y = 60; y < 520; y += 60) html += `<path class="tick" d="M0 ${y}h10M600 ${y}h-10"/>`;
+  html += `<g class="pin"><circle class="pin-ring" cx="${cx}" cy="${cy}" r="11"/><circle class="pin-dot" cx="${cx}" cy="${cy}" r="4"/></g>`;
+  svg.innerHTML = html;
+  svg.querySelectorAll('.c, .creek').forEach(p => p.style.setProperty('--len', Math.ceil(p.getTotalLength())));
+  document.documentElement.classList.add('draw');
+}
+drawContours();
 
 renderRecent();
 const initial = new URLSearchParams(location.hash.slice(1)).get('q');
