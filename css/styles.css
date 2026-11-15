@@ -373,3 +373,10 @@ dialog::backdrop { background: rgba(21,26,23,.45); }
 .inline-search input { flex: 1; min-width: 0; }
 #schoolResults:empty { display: none; }
 .mk-school.mine { background: var(--ink); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--ink); }
+
+/* ---------- listing details: what to do when only an address was given ---------- */
+.listing-empty { background: var(--paper-2); padding: 16px 18px; margin: 0 0 18px; max-width: 78ch; }
+.listing-empty p { margin: 0 0 8px; }
+.listing-empty ol { margin: 6px 0 10px; padding-left: 22px; display: grid; gap: 8px; }
+.listing-empty li { padding-left: 2px; }
+.listing-empty .btn { min-height: 36px; padding: 6px 12px; font-size: .875rem; margin-right: 4px; }
