@@ -20,7 +20,7 @@ jobs:
           mkdir -p /tmp/src && curl -sSL -o /tmp/src/schools.txt "$URL"
           python3 -I scripts/build_schools.py /tmp/src/schools.txt data/schools-on.json
       - name: Locate schools (OpenStreetMap match + Nominatim geocoding)
-        run: python3 -I scripts/school_coords.py
+        run: python3 -I -u scripts/school_coords.py
       - name: Keep coordinates even if a later step fails
         if: always()
         uses: actions/upload-artifact@v4
