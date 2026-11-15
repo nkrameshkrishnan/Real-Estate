@@ -27,11 +27,11 @@ export async function floodCheck(loc, osm) {
   const water = osm.water.map(w => ({ ...w, d: distToPolyline(loc.lat, loc.lon, w.pts) })).filter(w => isFinite(w.d)).sort((a, b) => a.d - b.d);
   const nearestWater = water[0];
   const inside = results.some(r => r.inside), near = results.some(r => r.near);
+  const covered = results.some(r => r.ok);
   let level = covered ? 'good' : 'unknown', label = covered ? 'Not in a mapped regulated area' : 'Outside the conservation-authority layers checked here';
-  if (inside) { level = 'bad'; label = 'Inside a Conservation Authority regulated area (flood/erosion hazard)'; }
+  if (inside) { level = 'bad'; label = 'Inside a Conservation Authority regulated area'; }
   else if (near) { level = 'warn'; label = 'Within 100 m of a regulated hazard area'; }
   else if (nearestWater && nearestWater.d < 150) { level = 'warn'; label = `Watercourse ${Math.round(nearestWater.d)} m away`; }
-  const covered = results.some(r => r.ok);
   return { level, label, layers: results, nearestWater, covered };
 }
 
