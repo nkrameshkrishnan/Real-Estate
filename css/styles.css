@@ -39,6 +39,7 @@
   accent-color: var(--magenta); color-scheme: light;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; min-width: 320px; }
 ::selection { background: var(--magenta); color: #fff; }
 a { color: var(--ink); text-decoration-color: var(--magenta); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
