@@ -39,6 +39,7 @@
   accent-color: var(--magenta); color-scheme: light;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; min-width: 320px; }
 ::selection { background: var(--magenta); color: #fff; }
 a { color: var(--ink); text-decoration-color: var(--magenta); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
@@ -138,7 +139,9 @@ kbd { font: inherit; font-size: .8em; font-weight: 600; border: 1px solid var(--
 .has-report .recent { margin-top: 10px; }
 
 /* ---------- status ---------- */
-.status .msg { padding: 12px 16px; margin: 0 0 16px; background: var(--water-soft); font-weight: 500; }
+.status .msg { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 12px 16px; margin: 0 0 16px; background: var(--water-soft); font-weight: 500; }
+.status .msg span { max-width: 75ch; }
+.status .msg .btn { background: #fff; }
 .status .msg.err { background: var(--bad-bg); color: var(--bad); }
 
 /* ---------- report ---------- */
