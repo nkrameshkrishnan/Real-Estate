@@ -57,3 +57,39 @@ export async function fetchDDF(mls) {
 export const listingKey = loc => `listing:${loc.lat.toFixed(4)},${loc.lon.toFixed(4)}`;
 export const getListing = loc => store.get(listingKey(loc), {});
 export const saveListing = (loc, l) => store.set(listingKey(loc), l);
+
+// Parse text copied from a REALTOR.ca listing page (Ctrl/Cmd+A, Ctrl/Cmd+C on the listing, then paste).
+// Copying a page you are viewing is not scraping: nothing is fetched from REALTOR.ca by this site.
+export function parseListingText(text) {
+  const t = String(text || '').replace(/\r/g, '');
+  const after = (label) => {
+    const re = new RegExp(`(?:^|\\n)\\s*${label}\\s*\\n\\s*([^\\n]+)`, 'i');
+    const m = t.match(re); return m ? m[1].trim() : null;
+  };
+  const money = s => s == null ? null : Number(String(s).replace(/[^0-9.]/g, '')) || null;
+  const out = { source: 'pasted' };
+  const mls = t.match(/MLS®?\s*(?:Number|#)\s*:?\s*([A-Z]?\d{6,9})/i); if (mls) out.mls = mls[1].toUpperCase();
+  const price = t.match(/\n\s*\$\s?([\d,]{5,})(?:\s*\n|\s*$)/) || t.match(/\$\s?([\d,]{5,})/); if (price) out.listPrice = money(price[1]);
+  const addr = t.match(/\n\s*([^\n]+?)\s*\n\s*([^\n]+?),\s*Ontario\s+([A-Z]\d[A-Z]\s?\d[A-Z]\d)/i);
+  if (addr) { out.address = addr[1].trim(); out.city = addr[2].trim(); out.postal = addr[3].toUpperCase(); }
+  const building = (after('Building Type') || '').toLowerCase();
+  const title = (after('Title') || '').toLowerCase();
+  const condo = /condominium|strata/.test(title) || /maintenance fees/i.test(t);
+  if (/apartment/.test(building)) out.type = 'condoApt';
+  else if (/row|town/.test(building)) out.type = condo ? 'condoTownhouse' : 'townhouse';
+  else if (/semi/.test(building) || /semi-detached/i.test(after('Style') || '')) out.type = 'semi';
+  else if (/house|detached/.test(building)) out.type = condo ? 'condoTownhouse' : 'detached';
+  else if (condo) out.type = 'condoApt';
+  const sq = after('Square Footage') || (t.match(/([\d,]{3,5})\s*-\s*([\d,]{3,5})\s*\n\s*Square Feet/i) || [])[0];
+  if (sq) { const nums = (sq.match(/[\d,]{3,6}/g) || []).map(n => Number(n.replace(/,/g, ''))).filter(n => n > 200 && n < 20000); if (nums.length) out.sqft = Math.round(nums.reduce((a, b) => a + b, 0) / nums.length); if (nums.length === 2) out.sqftRange = `${nums[0]}–${nums[1]}`; }
+  const beds = t.match(/\n\s*(\d+)\s*(?:\+\s*\d+)?\s*\n\s*Bedrooms/i); if (beds) out.beds = Number(beds[1]);
+  const taxes = after('Annual Property Taxes'); if (taxes) out.taxes = money(taxes);
+  const fee = after('Maintenance Fees'); if (fee) out.fee = money(fee);
+  const dom = (after('Time on REALTOR.ca') || '').match(/(\d+)\s*day/i); if (dom) out.dom = Number(dom[1]);
+  const built = after('Built in') || after('Year Built'); if (built && /\d{4}/.test(built)) out.yearBuilt = Number(built.match(/\d{4}/)[0]);
+  const age = after('Age'); if (!out.yearBuilt && age) { const a = age.match(/(\d+)\s*(?:-\s*(\d+))?/); if (a) out.ageRange = age; }
+  const brokerage = t.match(/\n\s*([^\n]+)\n\s*Brokerage\s*\n/i); if (brokerage) out.brokerage = brokerage[1].trim();
+  const board = t.match(/Data provided by:\s*([^\n]+)/i); if (board) out.board = board[1].trim();
+  const url = t.match(/https:\/\/www\.realtor\.ca\/real-estate\/\d+\/[a-z0-9-]+/i); if (url) out.url = url[0];
+  return out;
+}

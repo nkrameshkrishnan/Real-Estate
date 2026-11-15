@@ -6,7 +6,7 @@ A static web app (GitHub Pages, no backend) that builds a due-diligence report f
 |---|---|---|
 | Transit score (0–100) | Rapid-transit distance, routes and stops nearby | OpenStreetMap via Overpass API |
 | Neighbourhood safety index (0–100) | Incidents within 500 m in the last 12 months vs. the city-wide average, by category | Toronto Police Service open data (Toronto only for now) |
-| Schools + Fraser ratings | Elementary/secondary schools within 3 km, with board, grades, language, catchment links; Fraser rating you enter or add to `data/fraser.json` | OSM + Ontario *Publicly Funded Schools* list (OGL-Ontario) |
+| Schools + Fraser ratings | Elementary/secondary schools within 3 km, with board, grades, language, catchment links, and Fraser rating, rank, 5-year average and trend | OSM + Ontario *Publicly Funded Schools* list (OGL-Ontario) + Fraser Institute Report Cards 2025 (`data/fraser.json`) |
 | Market value & negotiation | Board average by type, comps-based value, opening/target/walk-away offer | `data/market.json` (TRREB Market Watch) + comps you paste in |
 | Hazards | Flood/erosion regulated area, overhead power lines, radon, asbestos, lead paint, wiring, plumbing, vegetation clearance, gutters & downspouts | TRCA / LSRCA / Kawartha / Otonabee CA layers, OSM, Health Canada radon survey, age-based rules |
 
@@ -22,6 +22,12 @@ python3 -m http.server 8000   # then open http://localhost:8000
 1. Create a repo and push this folder to `main`.
 2. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
 3. The `Deploy to GitHub Pages` workflow publishes on every push. `Refresh Ontario school list` updates `data/schools-on.json` monthly.
+
+## Listing details
+Paste the whole REALTOR.ca listing page (select all → copy) into **"Or paste a whole REALTOR.ca listing page"** (home page) or **"Fill from a REALTOR.ca listing page"** (listing card). The parser in `js/mls.js` reads price, MLS® number, building type/title (condo detection), square-footage range (midpoint), bedrooms, taxes, maintenance fee, days on REALTOR.ca and brokerage. Nothing is fetched from REALTOR.ca by the site. Addresses in MLS® format (`207 - 4101 SHEPPARD AVENUE E Toronto (Agincourt South-Malvern West), Ontario M1S3H3`) are cleaned before geocoding, and a unit number sets the type to condo apartment.
+
+## Fraser ratings
+`data/fraser.json` holds the 2025 Ontario elementary (3,051 of 3,052) and secondary (747) ratings from the Fraser Institute's published Report Card PDFs. compareschoolrankings.org has no public API (its internal API encrypts responses), so the data comes from the PDFs: run `scripts/extract_fraser.js` in the browser console on fraserinstitute.org (it downloads `fraser.tsv`), then `python3 scripts/build_fraser.py fraser.tsv data/fraser.json`. Update the PDF paths in the script for each new edition. Ratings © Fraser Institute; shown with attribution and links to compareschoolrankings.org.
 
 ## MLS® data — what's possible
 - **REALTOR.ca has no public API**, and scraping it breaches its terms of use. The app accepts a pasted REALTOR.ca listing URL, takes the address from the URL and links back to the listing.

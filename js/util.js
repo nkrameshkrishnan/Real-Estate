@@ -63,6 +63,7 @@ export function normName(s) {
   return String(s || '').toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/\b(st\.?|saint)\b/g, 'st')
+    .replace(/\b(ecole|elementaire|secondaire|catholique|publique|intermediaire|jr & sr|junior and senior|junior & senior|alternative|french immersion)\b/g, ' ')
     .replace(/\b(public school|ps|elementary school|catholic school|cs|catholic elementary school|ces|junior|jr|senior|sr|middle school|ms|secondary school|ss|collegiate institute|ci|high school|school|the|and|&|of|catholic|elementary|public|secondary|collegiate|institute|academy)\b/g, ' ')
     .replace(/[^a-z0-9]+/g, ' ').trim();
 }

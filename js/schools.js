@@ -3,7 +3,39 @@
 import { fetchJSON, cached, haversine, normName, store } from './util.js';
 
 const loadProvincial = () => cached('schools-on', () => fetchJSON('data/schools-on.json'));
-const loadFraser = () => cached('fraser', () => fetchJSON('data/fraser.json').catch(() => ({ schools: [] })));
+const loadFraser = () => cached('fraser', () => fetchJSON('data/fraser.json').catch(() => ({ elementary: [], secondary: [] })));
+
+// Fraser lists schools by community ("Scarborough", "Thornhill"), the Ministry list by mailing city.
+const CITY_GROUPS = [
+  ['toronto', 'scarborough', 'north york', 'etobicoke', 'east york', 'york', 'agincourt', 'willowdale', 'don mills', 'west hill', 'rexdale', 'weston', 'islington', 'downsview', 'malvern', 'rouge'],
+  ['vaughan', 'thornhill', 'concord', 'maple', 'woodbridge', 'kleinburg'],
+  ['markham', 'thornhill', 'unionville', 'markham village', 'cornell'],
+  ['mississauga', 'streetsville', 'port credit', 'meadowvale'],
+  ['ottawa', 'kanata', 'nepean', 'orleans', 'gloucester', 'barrhaven', 'stittsville', 'manotick'],
+  ['hamilton', 'stoney creek', 'ancaster', 'dundas', 'waterdown', 'binbrook'],
+  ['richmond hill', 'oak ridges'], ['clarington', 'bowmanville', 'courtice', 'newcastle'],
+];
+const cityKey = c => String(c || '').toLowerCase().replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+function cityCompatible(a, b) {
+  const x = cityKey(a), y = cityKey(b);
+  if (!x || !y) return false;
+  if (x === y || x.includes(y) || y.includes(x)) return true;
+  return CITY_GROUPS.some(g => g.includes(x) && g.includes(y));
+}
+
+let fraserIdx;
+async function getFraserIndex() {
+  if (fraserIdx) return fraserIdx;
+  const d = await loadFraser();
+  fraserIdx = { meta: d.meta || {}, byName: new Map(), legacy: d.schools || [] };
+  for (const level of ['elementary', 'secondary']) for (const r of d[level] || []) {
+    const k = level + ':' + normName(r[1]);
+    if (!fraserIdx.byName.has(k)) fraserIdx.byName.set(k, []);
+    fraserIdx.byName.get(k).push({ rank: r[0], name: r[1], city: r[2], rating: r[3], rating5: r[4], trend: r[5], level,
+      total: level === 'elementary' ? d.meta?.elementaryTotal : d.meta?.secondaryTotal });
+  }
+  return fraserIdx;
+}
 
 let index;
 async function getIndex() {
@@ -20,10 +52,7 @@ async function getIndex() {
   return index;
 }
 
-function sameCity(a, b) {
-  const n = x => String(x || '').toLowerCase().replace(/[^a-z]/g, '');
-  return n(a) && n(b) && (n(a) === n(b) || n(a).includes(n(b)) || n(b).includes(n(a)));
-}
+function sameCity(a, b) { return cityCompatible(a, b); }
 
 function matchProvincial(idx, osm, loc) {
   const t = osm.tags || {};
@@ -49,35 +78,44 @@ function guessLevel(name, tags, prov) {
 
 export const fraserKey = (name, city) => `fraser:${normName(name)}|${String(city || '').toLowerCase()}`;
 
-export function fraserFor(fraserData, name, city) {
-  const manual = store.get(fraserKey(name, city), null);
+export function fraserFor(fi, names, cities, level) {
+  const [name] = names;
+  const manual = store.get(fraserKey(name, cities[0]), null);
   if (manual) return { ...manual, source: 'you' };
+  const levels = level === 'Elementary' ? ['elementary'] : level === 'Secondary' ? ['secondary'] : ['elementary', 'secondary'];
+  for (const lv of levels) for (const n of names) {
+    const cands = fi.byName.get(lv + ':' + normName(n)) || [];
+    const hit = cands.find(c => cities.some(ct => cityCompatible(c.city, ct)));
+    if (hit) return { ...hit, rank: `${hit.rank}/${hit.total || '?'}`, source: 'fraser' };
+  }
   const k = normName(name);
-  const hit = (fraserData.schools || []).find(s => normName(s.name) === k && (!s.city || sameCity(s.city, city)));
-  return hit ? { ...hit, source: 'data/fraser.json' } : null;
+  const legacy = fi.legacy.find(s => normName(s.name) === k && (!s.city || cities.some(c => cityCompatible(s.city, c))));
+  return legacy ? { ...legacy, source: 'data/fraser.json' } : null;
 }
 
 export const fraserSearchUrl = name => `https://www.google.com/search?q=${encodeURIComponent(`site:compareschoolrankings.org "${name}"`)}`;
 
 export async function schoolsNear(loc, osm) {
-  const [idx, fraser] = await Promise.all([getIndex(), loadFraser()]);
+  const [idx, fraser] = await Promise.all([getIndex(), getFraserIndex()]);
   const list = osm.schools
     .map(s => {
       const prov = matchProvincial(idx, s, loc);
       const t = s.tags || {};
       const name = prov?.n || s.name;
       const city = prov?.c || t['addr:city'] || loc.municipality;
+      const level = guessLevel(name, t, prov);
+      const cities = [prov?.c, t['addr:city'], loc.community, loc.municipality, loc.address?.suburb, loc.address?.city_district].filter(Boolean);
       const isPrivate = !prov && /private|independent/i.test(`${t.operator || ''} ${t['operator:type'] || ''} ${t['school:type'] || ''}`);
       return {
         id: s.id, name, osmName: s.name, lat: s.lat, lon: s.lon,
         d: haversine(loc.lat, loc.lon, s.lat, s.lon),
-        level: guessLevel(name, t, prov),
+        level,
         board: prov?.b || t.operator || '', type: prov?.t || (isPrivate ? 'Private' : ''),
         lang: prov?.lang || '', grades: prov?.g || t.grades || '', special: prov?.sp && prov.sp !== 'Not applicable' ? prov.sp : '',
         city, website: prov?.w || t.website || '', boardWebsite: prov?.bw || '', phone: prov?.ph || '',
         address: prov ? `${prov.st}, ${prov.c} ${prov.pc}` : [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' '),
         publiclyFunded: !!prov, isPrivate,
-        fraser: fraserFor(fraser, name, city),
+        fraser: fraserFor(fraser, [name, s.name, t.official_name].filter(Boolean), cities, level),
       };
     })
     // ignore colleges/admin buildings that slipped in, keep within 3 km
@@ -93,7 +131,7 @@ export async function schoolsNear(loc, osm) {
     secondary: uniq.filter(s => s.level === 'Secondary').slice(0, 8),
     other: uniq.filter(s => s.level !== 'Elementary' && s.level !== 'Secondary').slice(0, 6),
     meta: idx.meta,
-    fraserEdition: fraser.edition,
+    fraserMeta: fraser.meta,
   };
 }
 

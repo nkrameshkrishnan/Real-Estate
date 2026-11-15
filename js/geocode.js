@@ -29,10 +29,28 @@ function shape(r, extra = {}) {
     type: r.type,
     address: a,
     municipality: a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || '',
+    community: a.suburb || a.city_district || a.borough || '',
+    osmBuildingType: r.category === 'building' || r.class === 'building' ? r.type : '',
     county: a.county || a.state_district || '',
     postcode: a.postcode || '',
     ...extra,
   };
+}
+
+// Normalise MLS®-style addresses: "207 - 4101 SHEPPARD AVENUE E Toronto (Agincourt South-Malvern West), Ontario M1S3H3"
+export function cleanAddress(raw) {
+  let s = String(raw).trim();
+  let unit = '';
+  let m = s.match(/^\s*(?:unit|suite|apt\.?|ph|#)\s*([\w-]+)\s*[,-]?\s*/i);
+  if (m) { unit = m[1]; s = s.slice(m[0].length); }
+  m = s.match(/^\s*([A-Z]?\d+[A-Z]?)\s*-\s*(?=\d)/i); // "207 - 4101 ..." or "1201-55 ..."
+  if (m) { unit = unit || m[1]; s = s.slice(m[0].length); }
+  m = s.match(/[,\s]+(?:unit|suite|apt\.?|#)\s*([\w-]+)/i); // "4101 Sheppard Ave E, Unit 207"
+  if (m) { unit = unit || m[1]; s = s.replace(m[0], ''); }
+  s = s.replace(/\([^)]*\)/g, ' ')          // "(Agincourt South-Malvern West)" community names
+       .replace(/\b([A-Z]\d[A-Z])\s?(\d[A-Z]\d)\b/i, '$1 $2')
+       .replace(/\s{2,}/g, ' ').replace(/\s+,/g, ',').trim();
+  return { query: s, unit };
 }
 
 export async function resolveLocation(input) {
@@ -60,16 +78,17 @@ export async function resolveLocation(input) {
     throw new Error('Could not locate the address in that REALTOR.ca link. Paste the street address instead.');
   }
 
-  const q = /ontario|\bON\b/i.test(raw) ? raw : `${raw}, Ontario`;
+  const { query, unit } = cleanAddress(raw);
+  const q = /ontario|\bON\b/i.test(query) ? query : `${query}, Ontario`;
   let hit = pickOntario(await nominatim(q));
   if (!hit) {
-    // Strip unit numbers like "1201-55 Main St" or "Unit 5,"
-    const simplified = q.replace(/^\s*(unit|suite|apt|#)\s*\w+\s*,?\s*/i, '').replace(/^\s*\w+\s*-\s*(?=\d)/, '');
-    if (simplified !== q) {
+    // Retry without the postal code (OSM postal codes are often missing or different)
+    const noPostal = q.replace(/\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/i, '').replace(/\s+,/g, ',').trim();
+    if (noPostal !== q) {
       await new Promise(r => setTimeout(r, 1100));
-      hit = pickOntario(await nominatim(simplified));
+      hit = pickOntario(await nominatim(noPostal));
     }
   }
   if (!hit) throw new Error('No Ontario match for that address. Check spelling, or include the city and postal code.');
-  return shape(hit, { source: 'address' });
+  return shape(hit, { source: 'address', unit, inputAddress: raw });
 }

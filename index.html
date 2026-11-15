@@ -30,6 +30,12 @@
           <input id="q" name="q" type="text" placeholder="e.g. 100 Queen St W, Toronto  ·  or paste a REALTOR.ca listing link" required>
           <button type="submit" class="btn primary" id="goBtn">Get report</button>
         </form>
+        <details class="paste-box" id="heroPaste">
+          <summary>Or paste a whole REALTOR.ca listing page</summary>
+          <p class="small muted">On the listing page press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>A</kbd> then <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>C</kbd>, and paste here. Price, MLS® number, type, size, taxes, condo fee and days on market are filled in for you.</p>
+          <textarea id="heroPasteText" aria-label="Pasted REALTOR.ca listing text" placeholder="Paste the listing page text here"></textarea>
+          <button class="btn primary" type="button" id="heroPasteBtn">Get report from listing</button>
+        </details>
         <p class="hint">Works across Ontario. Safety index currently uses Toronto Police open data; other areas link to their police service. <a href="#" id="exampleLink">Try an example</a></p>
         <div id="recent" class="recent"></div>
       </div>
@@ -79,6 +85,12 @@
               <a class="btn ghost" id="realtorLink" href="https://www.realtor.ca/" target="_blank" rel="noopener">Open REALTOR.ca</a>
             </div>
           </form>
+          <details class="paste-box">
+            <summary>Fill from a REALTOR.ca listing page</summary>
+            <p class="small muted">Select all on the listing page, copy, and paste here.</p>
+            <textarea id="listingPasteText" aria-label="Pasted REALTOR.ca listing text"></textarea>
+            <button class="btn" type="button" id="listingPasteBtn">Read listing</button>
+          </details>
           <p class="small" id="listingMsg"></p>
         </section>
       </div>

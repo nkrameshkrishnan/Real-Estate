@@ -3,10 +3,10 @@ import { resolveLocation } from './geocode.js';
 import { fetchOSM } from './overpass.js';
 import { scoreTransit } from './transit.js';
 import { safetyFor } from './safety.js';
-import { schoolsNear, fraserKey, fraserSearchUrl, boardLocator } from './schools.js';
+import { schoolsNear, fraserKey, boardLocator } from './schools.js';
 import { floodCheck, powerLineCheck, radonCheck, ageRisks, vegetationCheck, guttersCheck } from './hazards.js';
 import { loadMarket, negotiate, getComps, setComps, parseCompsCsv, TYPE_LABEL } from './market.js';
-import { settings, fetchDDF, getListing, saveListing } from './mls.js';
+import { settings, fetchDDF, getListing, saveListing, parseListingText } from './mls.js';
 
 const state = { loc: null, osm: null, map: null, layers: null, results: {} };
 const MLS_RE = /^[A-Z]?\d{7,9}$/i;
@@ -106,16 +106,16 @@ function schoolRow(s) {
   const f = s.fraser;
   const loc = boardLocator(s.board);
   const fraserCell = f
-    ? `<strong>${esc(f.rating)}</strong>/10${f.rank ? `<div class="sub">Rank ${esc(f.rank)}</div>` : ''}<div class="sub">${f.source === 'you' ? 'entered by you' : 'from data file'}</div>`
-    : `<span class="sub">Not entered</span>`;
+    ? `<strong>${esc(Number(f.rating).toFixed(1))}</strong>/10${f.trend ? `<span class="trend ${f.trend}" title="5-year trend">${f.trend === 'up' ? '▲' : '▼'}</span>` : ''}${f.rank ? `<div class="sub">Rank ${esc(f.rank)}</div>` : ''}${f.rating5 != null && f.rating5 !== '' ? `<div class="sub">5-yr avg ${esc(Number(f.rating5).toFixed(1))}</div>` : ''}<div class="sub">${f.source === 'you' ? 'entered by you' : f.source === 'fraser' ? 'Fraser 2025' : 'from data file'}</div>`
+    : `<span class="sub">${s.isPrivate ? 'Not ranked' : 'Not in Fraser report'}</span>`;
   return `<tr>
     <td><strong>${esc(s.name)}</strong>
       <div class="sub">${[s.type, s.board, s.lang && s.lang !== 'English' ? s.lang : '', s.grades && `Gr ${s.grades}`, s.special].filter(Boolean).map(esc).join(' · ') || (s.isPrivate ? 'Private / independent' : 'Not matched to provincial list (may be private)')}</div>
-      <div class="sub">${s.website ? `<a href="${esc(s.website)}" target="_blank" rel="noopener">Website</a> · ` : ''}${loc ? `<a href="${loc.url}" target="_blank" rel="noopener">Check catchment</a> · ` : s.boardWebsite ? `<a href="${esc(s.boardWebsite)}" target="_blank" rel="noopener">Board site (boundaries)</a> · ` : ''}<a href="${fraserSearchUrl(s.name)}" target="_blank" rel="noopener">Find on Fraser</a></div>
+      <div class="sub">${s.website ? `<a href="${esc(s.website)}" target="_blank" rel="noopener">Website</a> · ` : ''}${loc ? `<a href="${loc.url}" target="_blank" rel="noopener">Check catchment</a> · ` : s.boardWebsite ? `<a href="${esc(s.boardWebsite)}" target="_blank" rel="noopener">Board site (boundaries)</a> · ` : ''}<a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener" title="Search “${esc(s.name)}” on compareschoolrankings.org">Fraser details</a></div>
     </td>
     <td class="num">${fmtDist(s.d)}</td>
     <td class="num">${fraserCell}
-      <form class="inline-form fraser-form" data-key="${esc(fraserKey(s.name, s.city))}"><input name="rating" inputmode="decimal" placeholder="Rating" value="${f?.source === 'you' ? esc(f.rating) : ''}" aria-label="Fraser rating for ${esc(s.name)}"><input name="rank" placeholder="Rank e.g. 120/3052" value="${f?.source === 'you' ? esc(f.rank || '') : ''}" aria-label="Fraser rank"><button class="linkbtn">Save</button></form>
+      <form class="inline-form fraser-form" ${f && f.source !== 'you' ? 'hidden' : ''} data-key="${esc(fraserKey(s.name, s.city))}"><input name="rating" inputmode="decimal" placeholder="Rating" value="${f?.source === 'you' ? esc(f.rating) : ''}" aria-label="Fraser rating for ${esc(s.name)}"><input name="rank" placeholder="Rank e.g. 120/3052" value="${f?.source === 'you' ? esc(f.rank || '') : ''}" aria-label="Fraser rank"><button class="linkbtn">Save</button></form>
     </td></tr>`;
 }
 
@@ -123,13 +123,13 @@ function renderSchools(r) {
   const all = [...r.elementary, ...r.secondary];
   const rated = all.filter(s => s.fraser?.rating);
   const best = rated.sort((a, b) => b.fraser.rating - a.fraser.rating)[0];
-  tile('schools', 'Schools', `${r.elementary.length + r.secondary.length}`, best ? `Top Fraser: ${esc(best.fraser.rating)} (${esc(best.name)})` : `${r.elementary.length} elementary · ${r.secondary.length} secondary within 3 km`, rated.length ? (best.fraser.rating >= 7 ? 'good' : best.fraser.rating >= 5.5 ? 'ok' : 'warn') : 'unknown', 'schools');
+  tile('schools', 'Schools', `${r.elementary.length + r.secondary.length}`, best ? `Top Fraser: ${Number(best.fraser.rating).toFixed(1)} (${esc(best.name)})` : `${r.elementary.length} elementary · ${r.secondary.length} secondary within 3 km`, rated.length ? (best.fraser.rating >= 7 ? 'good' : best.fraser.rating >= 5.5 ? 'ok' : 'warn') : 'unknown', 'schools');
   const table = (title, rows) => rows.length ? `<h4 style="margin-top:14px">${title}</h4><div class="table-wrap"><table><thead><tr><th>School</th><th class="num">Distance</th><th class="num">Fraser rating</th></tr></thead><tbody>${rows.map(schoolRow).join('')}</tbody></table></div>` : '';
   section('schools', `
     <div class="callout"><strong>Nearest is not always designated.</strong> Attendance boundaries are set by each board (public, Catholic, French-language). Confirm with the board’s address lookup${r.elementary.some(s => /toronto dsb/i.test(s.board)) ? ' — e.g. <a href="https://www.tdsb.on.ca/Find-your/School/By-Home-Address" target="_blank" rel="noopener">TDSB Find your school</a>' : ''} or the <a href="https://www.ontario.ca/page/find-your-school" target="_blank" rel="noopener">Ontario school information finder</a>.</div>
     ${table('Elementary', r.elementary)}${table('Secondary', r.secondary)}${table('Other / unclassified', r.other)}
     ${!all.length && !r.other.length ? '<p class="muted">No schools mapped within 3 km.</p>' : ''}
-    <p class="sub">Fraser Institute ratings (0–10) are published on <a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener">compareschoolrankings.org</a> and have no public API. Look a school up with “Find on Fraser”, then save its rating here (stored in this browser), or add ratings for your area to <code>data/fraser.json</code> so everyone using your site sees them. School list: ${esc(r.meta?.source || '')} (${esc(r.meta?.licence || '')}).</p>`);
+    <p class="sub">Fraser ratings (0–10, rank, 5-year average and trend ▲▼): ${r.fraserMeta?.source ? `<a href="${esc(r.fraserMeta.elementaryUrl)}" target="_blank" rel="noopener">${esc(r.fraserMeta.source)}</a>` : 'Fraser Institute'} — see full school profiles on <a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener">compareschoolrankings.org</a>. Schools without a Grade 3/6 (elementary) or Grade 9/OSSLT (secondary) EQAO result, and most private schools, aren’t ranked. School list: ${esc(r.meta?.source || '')} (${esc(r.meta?.licence || '')}).</p>`);
   $$fraser();
   mapAdd('schools', g => all.concat(r.other).forEach(s => L.circleMarker([s.lat, s.lon], { radius: 6, color: '#fff', weight: 1.5, fillColor: '#2f6f9f', fillOpacity: 1 }).bindPopup(`<strong>${esc(s.name)}</strong><br>${esc(s.level)} · ${fmtDist(s.d)}${s.fraser ? `<br>Fraser ${esc(s.fraser.rating)}/10` : ''}`).addTo(g)));
 }
@@ -162,13 +162,17 @@ async function renderMarket() {
   const cond = store.get('marketCondition', '');
   const n = negotiate({ ...l, condition: cond || undefined, comps, market });
   const typeAvg = market?.averagePrice?.[l.type];
-  tile('market', 'Fair value (est.)', isFinite(n.fair) ? fmtMoney(n.fair) : '—', isFinite(n.target) ? `Target offer ${fmtMoney(n.target)} · ${esc(n.confidence)} confidence` : 'Add list price & comps', n.confidence === 'high' ? 'good' : n.confidence === 'medium' ? 'ok' : 'unknown', 'market');
+  if (isFinite(n.fair)) tile('market', 'Comps-based value', fmtMoney(n.fair), `Target offer ${fmtMoney(n.target)} · ${esc(n.confidence)} confidence`, n.confidence === 'high' ? 'good' : n.confidence === 'medium' ? 'ok' : 'unknown', 'market');
+  else if (isFinite(n.target)) tile('market', 'Target offer', fmtMoney(n.target), `List ${fmtMoney(l.listPrice)} · add comps for a value estimate`, 'unknown', 'market');
+  else tile('market', 'Market value', '—', 'Paste the listing to get started', 'unknown', 'market');
   section('market', `
     <div class="kpis">
       <div class="kpi"><div class="v">${fmtMoney(typeAvg)}</div><div class="k">${esc(market?.area || 'Board')} avg. ${esc(TYPE_LABEL[l.type] || '')} · ${esc(market?.period || '')}</div></div>
       ${l.type === 'condoApt' && market?.condoApt416 ? `<div class="kpi"><div class="v">${fmtMoney(/toronto/i.test(loc.municipality) ? market.condoApt416 : market.condoApt905)}</div><div class="k">avg. condo apt (${/toronto/i.test(loc.municipality) ? '416' : '905'})</div></div>` : ''}
       <div class="kpi"><div class="v">${l.listPrice ? fmtMoney(l.listPrice) : '—'}</div><div class="k">list price</div></div>
-      <div class="kpi"><div class="v">${isFinite(n.low) ? `${fmtMoney(n.low)} – ${fmtMoney(n.high)}` : '—'}</div><div class="k">comps range (25th–75th pct.)</div></div>
+      ${isFinite(n.low) ? `<div class="kpi"><div class="v">${fmtMoney(n.low)} – ${fmtMoney(n.high)}</div><div class="k">comps range (25th–75th pct.)</div></div>` : ''}
+      ${l.fee ? `<div class="kpi"><div class="v">${fmtMoney(l.fee)}</div><div class="k">condo fee / month${l.sqft ? ` ($${(l.fee / l.sqft).toFixed(2)}/sq ft)` : ''}</div></div>` : ''}
+      ${l.taxes ? `<div class="kpi"><div class="v">${fmtMoney(l.taxes)}</div><div class="k">annual property taxes</div></div>` : ''}
     </div>
     <div class="offer">
       <div><div class="k">Opening offer</div><div class="v">${fmtMoney(n.opening)}</div></div>
@@ -240,7 +244,7 @@ async function runSchools() {
   try { renderSchools(await schoolsNear(state.loc, state.osm)); } catch (e) { sectionError('schools', e); }
 }
 
-async function analyse(input) {
+async function analyse(input, pending = null) {
   const btn = $('#goBtn');
   btn.disabled = true;
   status('Locating address…');
@@ -256,6 +260,7 @@ async function analyse(input) {
     }
     const loc = await resolveLocation(query);
     if (listing) { loc.display = `${listing.address}, ${listing.city} ${listing.postal || ''}`; loc.listingUrl = listing.url; }
+    if (pending?.url) loc.listingUrl = pending.url;
     state.loc = loc; state.osm = null; state.results = {};
     Object.keys(tiles).forEach(k => delete tiles[k]);
     pushRecent(input.trim());
@@ -263,7 +268,7 @@ async function analyse(input) {
 
     $('#report').hidden = false;
     const a = loc.address || {};
-    $('#locTitle').textContent = listing?.address || (a.road ? [a.house_number, a.road].filter(Boolean).join(' ') : loc.display.split(',')[0]);
+    $('#locTitle').textContent = listing?.address || pending?.address || ((loc.unit ? `Unit ${loc.unit}, ` : '') + (a.road ? [a.house_number, a.road].filter(Boolean).join(' ') : loc.display.split(',')[0]));
     $('#locMuni').textContent = [loc.municipality, loc.county].filter(Boolean).join(' · ');
     $('#locMeta').textContent = `${loc.display} · ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}`;
     $('#realtorLink').href = loc.listingUrl || 'https://www.realtor.ca/';
@@ -271,9 +276,14 @@ async function analyse(input) {
     ['transit', 'safety', 'schools', 'market', 'hazards'].forEach(id => section(id, '<div class="skeleton"></div>'));
     tile('transit', 'Transit score', '…', 'Loading', 'unknown', 'transit');
     $('#listingForm').reset();
-    fillForm({ ...getListing(loc), ...(listing || {}) });
+    const saved = getListing(loc);
+    const guessedType = (loc.unit || /apartments|condo/i.test(loc.osmBuildingType)) ? 'condoApt' : null;
+    fillForm({ ...(guessedType && !saved.type ? { type: guessedType } : {}), ...saved, ...(pending || {}), ...(listing || {}) });
+    if (pending) saveListing(loc, { ...saved, ...pending });
     if (listing) saveListing(loc, { ...getListing(loc), ...listing });
-    $('#listingMsg').textContent = listing ? `Loaded MLS® ${listing.mls} from DDF®${listing.brokerage ? ' — listed by ' + listing.brokerage : ''}.` : '';
+    $('#listingMsg').textContent = listing ? `Loaded MLS® ${listing.mls} from DDF®${listing.brokerage ? ' — listed by ' + listing.brokerage : ''}.`
+      : pending ? `Read MLS® ${pending.mls || ''} from the pasted listing${pending.brokerage ? ' — listed by ' + pending.brokerage.replace(/\.$/, '') : ''}.${pending.sqftRange ? ` Size given as ${pending.sqftRange} sq ft; using the midpoint.` : ''}`
+      : guessedType && !saved.type ? 'Looks like a condo unit — property type set to Condo apartment. Paste the listing to fill in the rest.' : '';
     initMap(loc);
     status('');
     document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -327,6 +337,23 @@ $('#ddfBtn').addEventListener('click', async () => {
     $('#listingMsg').textContent = `Loaded MLS® ${l.mls}.`;
     renderMarket(); renderHazards();
   } catch (e) { $('#listingMsg').textContent = e.message; }
+});
+$('#heroPasteBtn').addEventListener('click', () => {
+  const p = parseListingText($('#heroPasteText').value);
+  if (!p.address) { status('Couldn’t find an address in the pasted text. Make sure you copied the whole REALTOR.ca listing page.', true); return; }
+  const q = `${p.address}, ${p.city || ''} ${p.postal || ''}`.trim();
+  $('#q').value = q; $('#heroPaste').open = false;
+  analyse(q, p);
+});
+$('#listingPasteBtn').addEventListener('click', () => {
+  if (!state.loc) return;
+  const p = parseListingText($('#listingPasteText').value);
+  const fields = ['listPrice', 'mls', 'type', 'sqft', 'taxes', 'fee', 'dom', 'beds', 'yearBuilt'].filter(k => p[k] != null);
+  if (!fields.length) { $('#listingMsg').textContent = 'Nothing recognised in the pasted text — copy the whole REALTOR.ca listing page.'; return; }
+  fillForm(p); saveListing(state.loc, { ...listingFromForm() });
+  if (p.url) { $('#realtorLink').href = p.url; $('#realtorLink').textContent = 'View listing on REALTOR.ca'; }
+  $('#listingMsg').textContent = `Filled ${fields.length} fields from the listing${p.mls ? ` (MLS® ${p.mls})` : ''}.${p.sqftRange ? ` Size given as ${p.sqftRange} sq ft; using the midpoint.` : ''}`;
+  renderMarket(); renderHazards();
 });
 $('#shareBtn').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(location.href); $('#shareBtn').textContent = 'Copied'; } catch { prompt('Copy this link', location.href); }

@@ -42,10 +42,14 @@ export function negotiate({ listPrice, type, sqft, dom, reductions, condition, c
   } else if (prices.length >= 3) {
     fair = median(prices); low = pct(prices, 0.25); high = pct(prices, 0.75);
     basis = `median of ${prices.length} comparable sale prices`; confidence = prices.length >= 5 ? 'medium' : 'low';
-  } else if (market?.averagePrice?.[type]) {
-    fair = market.averagePrice[type]; low = fair * 0.85; high = fair * 1.15;
-    basis = `${market.area} average ${TYPE_LABEL[type] || type} price (${market.period}) — add at least 3 comps for a meaningful estimate`;
-    confidence = 'very low';
+  } else if (isFinite(L)) {
+    basis = `list price only — add at least 3 comparable sales (same building or street, last 6 months) for a value estimate`;
+    confidence = 'none';
+  }
+  const boardAvg = market?.averagePrice?.[type];
+  if (isFinite(L) && boardAvg && !isFinite(fair)) {
+    const rel = (L - boardAvg) / boardAvg;
+    notes.push(`List price is ${Math.abs(rel * 100).toFixed(0)}% ${rel < 0 ? 'below' : 'above'} the ${market.area} average for this property type (${market.period}). Board averages mix all sizes and areas, so treat this as context, not value.`);
   }
 
   const cond = condition || market?.marketCondition || 'balanced';
@@ -57,6 +61,7 @@ export function negotiate({ listPrice, type, sqft, dom, reductions, condition, c
   const r = Math.min(Number(reductions) || 0, 3);
   if (r) { disc += 0.01 * r; notes.push(`${r} price reduction(s) so far — signals the list price was above what buyers would pay.`); }
 
+  if (!isFinite(L) && !isFinite(fair)) return { fair: NaN, low: NaN, high: NaN, opening: NaN, target: NaN, walkAway: NaN, basis: 'enter the list price (paste the listing) and add comparable sales', confidence: 'none', condition: cond, notes };
   let anchor = isFinite(L) && isFinite(fair) ? Math.min(L, fair) : (isFinite(fair) ? fair : L);
   if (isFinite(L) && isFinite(fair)) {
     const gap = (L - fair) / fair;
@@ -65,7 +70,7 @@ export function negotiate({ listPrice, type, sqft, dom, reductions, condition, c
   }
   const target = anchor * (1 - Math.max(disc, -0.02));
   const opening = target * 0.97;
-  const walkAway = isFinite(high) ? Math.min(high, Math.max(target * 1.03, fair || 0)) : target * 1.03;
+  const walkAway = isFinite(high) ? Math.min(high, Math.max(target * 1.03, fair || 0)) : isFinite(L) ? Math.min(L, target * 1.03) : target * 1.03;
 
   notes.push('Ontario offers usually include conditions (financing, home inspection; status certificate review for condos). Fewer conditions strengthen an offer but shift risk to you.');
   return { fair: roundTo(fair), low: roundTo(low), high: roundTo(high), opening: roundTo(opening), target: roundTo(target), walkAway: roundTo(walkAway), basis, confidence, condition: cond, notes };
