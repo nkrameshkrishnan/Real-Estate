@@ -343,3 +343,33 @@ dialog::backdrop { background: rgba(21,26,23,.45); }
   .panel, .score, .hazard, tr { break-inside: avoid; }
   #map { height: 320px; }
 }
+
+/* ---------- schools: the ones this child can attend ---------- */
+.school-level { margin: 18px 0 6px; font-size: 1rem; }
+.zoned { margin-bottom: 10px; }
+.zoned > h4, .boards > h4 { font-size: 1.125rem; margin: 6px 0 8px; }
+.zoned-title { font-size: 1.25rem !important; margin-bottom: 4px !important; }
+.school-table { table-layout: fixed; }
+.school-table td:first-child, .school-table th:first-child { width: auto; }
+.school-table td:nth-child(2), .school-table th:nth-child(2) { width: 15%; }
+.school-table td:nth-child(3), .school-table th:nth-child(3) { width: 30%; }
+@media (max-width: 520px) { .school-table td:nth-child(2), .school-table th:nth-child(2) { width: 22%; } .school-table td:nth-child(3), .school-table th:nth-child(3) { width: 34%; } }
+.empty-note { background: var(--paper-2); padding: 14px 16px; margin: 0; max-width: 75ch; }
+.boards { margin: 18px 0 8px; }
+.board-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); border-top: 2px solid var(--ink); }
+.board-list li { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "sys btn" "bd btn"; align-items: center; column-gap: 12px; padding: 12px 14px 12px 0; border-bottom: 1px solid var(--rule); }
+.board-list .sys { grid-area: sys; font-size: .8125rem; color: var(--ink-2); }
+.board-list .bd { grid-area: bd; font-weight: 650; }
+.board-list .btn { grid-area: btn; min-height: 36px; padding: 6px 12px; font-size: .875rem; }
+.mine-toggle { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; min-height: 32px; }
+.mine-toggle input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--magenta); cursor: pointer; }
+.all-schools { margin: 18px 0 14px; border-top: 2px solid var(--ink); padding-top: 12px; }
+.all-schools > summary { cursor: pointer; font-weight: 700; font-size: 1.0625rem; width: fit-content; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 4px; }
+.all-schools > summary:hover { text-decoration-color: var(--magenta); }
+.all-schools > summary .muted { font-weight: 500; }
+.school-search { margin-top: 18px; max-width: 640px; display: grid; gap: 6px; }
+.school-search label { font-weight: 600; font-size: .9375rem; }
+.inline-search { display: flex; gap: 8px; }
+.inline-search input { flex: 1; min-width: 0; }
+#schoolResults:empty { display: none; }
+.mk-school.mine { background: var(--ink); border: 2px solid #fff; box-shadow: 0 0 0 2px var(--ink); }

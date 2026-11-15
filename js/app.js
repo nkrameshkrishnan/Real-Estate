@@ -3,7 +3,7 @@ import { resolveLocation, LookupUnavailable } from './geocode.js';
 import { fetchTransitSchools, fetchHazardsOSM } from './overpass.js';
 import { scoreTransit } from './transit.js';
 import { safetyFor } from './safety.js';
-import { schoolsNear, fraserKey, boardLocator } from './schools.js';
+import { schoolsNear, fraserKey, boardLocator, boardsFor, searchSchools } from './schools.js';
 import { floodCheck, powerLineCheck, radonCheck, ageRisks, vegetationCheck, guttersCheck } from './hazards.js';
 import { loadMarket, negotiate, getComps, setComps, parseCompsCsv, TYPE_LABEL } from './market.js';
 import { settings, fetchDDF, getListing, saveListing, parseListingText, yearFromAge } from './mls.js';
@@ -177,7 +177,8 @@ function renderSafety(s, loc) {
 }
 
 // ---------- SCHOOLS ----------
-function schoolRow(s) {
+const withProtocol = u => !u ? '' : /^https?:\/\//i.test(u) ? u : `https://${u}`;
+function schoolRow(s, mine = false) {
   const f = s.fraser;
   const loc = boardLocator(s.board);
   const fraserCell = f
@@ -186,9 +187,10 @@ function schoolRow(s) {
   return `<tr>
     <td><strong>${esc(s.name)}</strong>
       <div class="sub">${[s.type, s.board, s.lang && s.lang !== 'English' ? s.lang : '', s.grades && `Gr ${s.grades}`, s.special].filter(Boolean).map(esc).join(' · ') || (s.isPrivate ? 'Private / independent' : 'Not matched to provincial list (may be private)')}</div>
-      <div class="sub">${s.website ? `<a href="${esc(s.website)}" target="_blank" rel="noopener">Website</a> · ` : ''}${loc ? `<a href="${loc.url}" target="_blank" rel="noopener">Check catchment</a> · ` : s.boardWebsite ? `<a href="${esc(s.boardWebsite)}" target="_blank" rel="noopener">Board site (boundaries)</a> · ` : ''}<a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener" title="Search “${esc(s.name)}” on compareschoolrankings.org">Fraser details</a></div>
+      <div class="sub">${s.website ? `<a href="${esc(withProtocol(s.website))}" target="_blank" rel="noopener">Website</a> · ` : ''}${loc ? `<a href="${loc.url}" target="_blank" rel="noopener">Check catchment</a> · ` : s.boardWebsite ? `<a href="${esc(withProtocol(s.boardWebsite))}" target="_blank" rel="noopener">Board site</a> · ` : ''}<a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener" title="Search “${esc(s.name)}” on compareschoolrankings.org">Fraser details</a></div>
+      <label class="mine-toggle"><input type="checkbox" data-mine="${esc(s.id)}" ${mine ? 'checked' : ''}> My school</label>
     </td>
-    <td class="num">${fmtDist(s.d)}</td>
+    <td class="num">${s.d == null ? '—' : fmtDist(s.d)}</td>
     <td class="num">${fraserCell}
       <form class="inline-form fraser-form" ${f && f.source !== 'you' ? 'hidden' : ''} data-key="${esc(fraserKey(s.name, s.city))}"><input name="rating" inputmode="decimal" placeholder="Rating" value="${f?.source === 'you' ? esc(f.rating) : ''}" aria-label="Fraser rating for ${esc(s.name)}"><input name="rank" placeholder="Rank e.g. 120/3052" value="${f?.source === 'you' ? esc(f.rank || '') : ''}" aria-label="Fraser rank"><button class="linkbtn">Save</button></form>
     </td></tr>`;
@@ -202,25 +204,96 @@ function renderSchools(r) {
     section('schools', `<p>${badge('unknown', 'Waiting for map data')} School locations come from OpenStreetMap, which hasn’t answered yet. They appear here as soon as it does; if Transit shows a Retry button, retrying it loads schools too.</p>`);
     return;
   }
-  const rated = all.filter(s => s.fraser?.rating);
-  const best = rated.sort((a, b) => b.fraser.rating - a.fraser.rating)[0];
-  tile('schools', 'Schools', `${r.elementary.length + r.secondary.length}`, best ? `Top Fraser: ${Number(best.fraser.rating).toFixed(1)} (${esc(best.name)})` : `${r.elementary.length} elementary · ${r.secondary.length} secondary within 3 km`, rated.length ? (best.fraser.rating >= 7 ? 'good' : best.fraser.rating >= 5.5 ? 'ok' : 'warn') : 'unknown', 'schools');
+  state.schools = r;
+  r.all.forEach(x => schoolPool.set(x.id, x));
+  const mine = getMine(state.loc).map(m => schoolPool.get(m.id) || m);
+  const mineIds = new Set(mine.map(m => m.id));
   // Highest Fraser rating first; schools without a rating follow, nearest first
   const byRating = rows => [...rows].sort((x, y) => {
     const num = v => (v == null || v === '' ? NaN : Number(v)), rx = num(x.fraser?.rating), ry = num(y.fraser?.rating);
     const hx = Number.isFinite(rx), hy = Number.isFinite(ry);
     if (hx !== hy) return hx ? -1 : 1;
-    return hx && ry !== rx ? ry - rx : x.d - y.d;
+    return hx && ry !== rx ? ry - rx : (x.d ?? 1e9) - (y.d ?? 1e9);
   });
-  const table = (title, rows) => rows.length ? `<h4 style="margin-top:14px">${title} <span class="small muted" style="font-weight:400">· highest Fraser rating first, then unrated by distance</span></h4><div class="table-wrap"><table><thead><tr><th>School</th><th class="num">Distance</th><th class="num" aria-sort="descending">Fraser rating</th></tr></thead><tbody>${byRating(rows).map(schoolRow).join('')}</tbody></table></div>` : '';
+  const levels = rows => [['Elementary', rows.filter(x => x.level === 'Elementary')], ['Secondary', rows.filter(x => x.level === 'Secondary')], ['Other', rows.filter(x => x.level !== 'Elementary' && x.level !== 'Secondary')]];
+  const table = (title, rows) => rows.length ? `<h4 class="school-level">${title}</h4><div class="table-wrap"><table class="school-table"><thead><tr><th>School</th><th class="num">Distance</th><th class="num" aria-sort="descending">Fraser rating</th></tr></thead><tbody>${byRating(rows).map(x => schoolRow(x, mineIds.has(x.id))).join('')}</tbody></table></div>` : '';
+
+  // Legend row: about the schools this child can attend, not every school nearby
+  const rated = mine.filter(x => x.fraser?.rating != null && x.fraser.rating !== '');
+  const best = [...rated].sort((a, b) => b.fraser.rating - a.fraser.rating)[0];
+  if (mine.length) tile('schools', 'Your schools', `${mine.length}`, best ? `Best Fraser: ${Number(best.fraser.rating).toFixed(1)} (${esc(best.name)})` : 'None of them has a Fraser rating', best ? (best.fraser.rating >= 7 ? 'good' : best.fraser.rating >= 5.5 ? 'ok' : 'warn') : 'unknown', 'schools');
+  else tile('schools', 'Schools', '—', 'Mark the schools this address is zoned for', 'unknown', 'schools', 'Needs your input');
+
+  const boards = boardsFor(r.all);
+  const boardList = boards.length ? `<ul class="board-list">${boards.map(b => `<li><span class="sys">${esc(b.system)}</span><span class="bd">${esc(b.board)}</span>${b.locator ? `<a class="btn" href="${b.locator.url}" target="_blank" rel="noopener">Find your school</a>` : b.website ? `<a class="btn ghost" href="${esc(withProtocol(b.website))}" target="_blank" rel="noopener">Board website</a>` : ''}</li>`).join('')}</ul>` : '';
+  const nAll = r.all.length;
+  const wasOpen = document.querySelector('#schools details.all-schools')?.open;
   section('schools', `
-    <div class="callout"><strong>Nearest is not always designated.</strong> Attendance boundaries are set by each board (public, Catholic, French-language). Confirm with the board’s address lookup${r.elementary.some(s => /toronto dsb/i.test(s.board)) ? ' — e.g. <a href="https://www.tdsb.on.ca/Find-your/School/By-Home-Address" target="_blank" rel="noopener">TDSB Find your school</a>' : ''} or the <a href="https://www.ontario.ca/page/find-your-school" target="_blank" rel="noopener">Ontario school information finder</a>.</div>
-    ${table('Elementary', r.elementary)}${table('Secondary', r.secondary)}${table('Other / unclassified', r.other)}
-    ${!all.length && !r.other.length ? '<p class="muted">No schools mapped within 3 km.</p>' : ''}
-    <p class="sub">Fraser ratings (0–10, rank, 5-year average and trend <svg class="trend up" aria-hidden="true"><use href="#sym-up"/></svg><svg class="trend down" aria-hidden="true"><use href="#sym-down"/></svg>): ${r.fraserMeta?.source ? `<a href="${esc(r.fraserMeta.elementaryUrl)}" target="_blank" rel="noopener">${esc(r.fraserMeta.source)}</a>` : 'Fraser Institute'} — see full school profiles on <a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener">compareschoolrankings.org</a>. Schools without a Grade 3/6 (elementary) or Grade 9/OSSLT (secondary) EQAO result, and most private schools, aren’t ranked. School list: ${esc(r.meta?.source || '')} (${esc(r.meta?.licence || '')}).</p>`);
+    <div class="zoned">
+      <h4 class="zoned-title">Schools your child can attend</h4>
+      ${mine.length ? levels(mine).map(([t, rows]) => table(t, rows)).join('') : `<p class="empty-note">No schools marked yet. Each board below sets its own attendance areas: check this address with the boards you’re considering, then tick <strong>My school</strong> next to the schools they name in the list below.</p>`}
+    </div>
+    <div class="boards">
+      <h4>Boards serving this address</h4>
+      ${boardList || '<p class="small muted">No publicly funded schools were found within 3 km. Use the <a href="https://www.ontario.ca/page/find-your-school" target="_blank" rel="noopener">Ontario school information finder</a> to find the board for this address.</p>'}
+    </div>
+    <details class="all-schools" ${(wasOpen ?? !mine.length) ? 'open' : ''}>
+      <summary>${mine.length ? 'Change your schools' : 'Pick from schools within 3 km'} <span class="muted">(${nAll})</span></summary>
+      ${levels(r.all).map(([t, rows]) => table(t, rows)).join('')}
+      ${!nAll ? '<p class="muted">No schools mapped within 3 km.</p>' : ''}
+      <form class="school-search" id="schoolSearch" autocomplete="off">
+        <label for="schoolQ">Designated school not listed? Search Ontario’s school list by name</label>
+        <div class="inline-search"><input id="schoolQ" name="q" placeholder="e.g. Jarvis Collegiate"><button class="btn" type="submit">Search</button></div>
+        <div id="schoolResults"></div>
+      </form>
+    </details>
+    <div class="callout"><strong>Nearest is not always designated.</strong> Attendance boundaries are set by each board (public, Catholic, French-language). Confirm with the board’s address lookup${boards.some(b => /toronto dsb/i.test(b.board)) ? ', e.g. <a href="https://www.tdsb.on.ca/Find-your/School/By-Home-Address" target="_blank" rel="noopener">TDSB Find your school</a>,' : ''} or the <a href="https://www.ontario.ca/page/find-your-school" target="_blank" rel="noopener">Ontario school information finder</a>. Your choices are saved in this browser for this address only.</div>
+    <p class="sub">Fraser ratings (0–10, rank, 5-year average and trend <svg class="trend up" aria-hidden="true"><use href="#sym-up"/></svg><svg class="trend down" aria-hidden="true"><use href="#sym-down"/></svg>): ${r.fraserMeta?.source ? `<a href="${esc(r.fraserMeta.elementaryUrl)}" target="_blank" rel="noopener">${esc(r.fraserMeta.source)}</a>` : 'Fraser Institute'}. See full school profiles on <a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener">compareschoolrankings.org</a>. Schools without a Grade 3/6 (elementary) or Grade 9/OSSLT (secondary) EQAO result, and most private schools, aren’t ranked. School list: ${esc(r.meta?.source || '')} (${esc(r.meta?.licence || '')}).</p>`);
   $$fraser();
-  mapAdd('schools', g => all.concat(r.other).forEach(s => L.marker([s.lat, s.lon], { icon: L.divIcon({ className: 'mk-school', iconSize: [11, 11] }), keyboard: false }).bindPopup(`<strong>${esc(s.name)}</strong><br>${esc(s.level)} · ${fmtDist(s.d)}${s.fraser ? `<br>Fraser ${esc(s.fraser.rating)}/10` : ''}`).addTo(g)));
+  const showHits = (q, hits) => {
+    const ids = new Set(getMine(state.loc).map(m => m.id));
+    $('#schoolQ').value = q;
+    $('#schoolResults').innerHTML = hits.length ? `<div class="table-wrap"><table class="school-table"><tbody>${hits.map(x => schoolRow(x, ids.has(x.id))).join('')}</tbody></table></div>` : `<p class="small muted">No Ontario school name contains “${esc(q)}”. Try a shorter part of the name.</p>`;
+  };
+  if (lastSearch && lastSearch.loc === state.loc) showHits(lastSearch.q, lastSearch.hits);
+  $('#schoolSearch').addEventListener('submit', async e => {
+    e.preventDefault();
+    const q = $('#schoolQ').value.trim();
+    $('#schoolResults').innerHTML = '<p class="small muted">Searching…</p>';
+    const hits = await searchSchools(q, state.loc).catch(() => []);
+    hits.forEach(x => schoolPool.set(x.id, x));
+    lastSearch = { loc: state.loc, q, hits };
+    showHits(q, hits);
+  });
+  mapAdd('schools', g => r.all.concat(mine.filter(m => !r.all.some(x => x.id === m.id))).forEach(x => {
+    if (x.lat == null) return;
+    const isMine = mineIds.has(x.id);
+    L.marker([x.lat, x.lon], { icon: L.divIcon({ className: `mk-school${isMine ? ' mine' : ''}`, iconSize: isMine ? [15, 15] : [9, 9] }), keyboard: false, zIndexOffset: isMine ? 500 : 0 })
+      .bindPopup(`<strong>${esc(x.name)}</strong>${isMine ? ' (your school)' : ''}<br>${esc(x.level)}${x.d != null ? ` · ${fmtDist(x.d)}` : ''}${x.fraser ? `<br>Fraser ${esc(x.fraser.rating)}/10` : ''}`).addTo(g);
+  }));
 }
+// "My school" choices, saved per address in this browser
+const schoolPool = new Map();
+let lastSearch = null;
+const mineKey = loc => `myschools:${loc.lat.toFixed(4)},${loc.lon.toFixed(4)}`;
+const getMine = loc => (loc ? store.get(mineKey(loc), []) : []);
+function setMine(id, on) {
+  const loc = state.loc; if (!loc) return;
+  const cur = getMine(loc).filter(m => m.id !== id);
+  if (on) {
+    const x = schoolPool.get(id); if (!x) return;
+    const { name, level, board, type, lang, grades, special, city, website, boardWebsite, d, lat, lon, fraser, publiclyFunded, isPrivate } = x;
+    cur.push({ id, name, level, board, type, lang, grades, special, city, website, boardWebsite, d, lat, lon, fraser, publiclyFunded, isPrivate });
+  }
+  store.set(mineKey(loc), cur);
+}
+document.getElementById('schools').addEventListener('change', e => {
+  const cb = e.target.closest('[data-mine]'); if (!cb) return;
+  const id = cb.dataset.mine, where = cb.closest('#schoolResults') ? '#schoolResults' : '.all-schools';
+  setMine(id, cb.checked);
+  if (state.schools) renderSchools(state.schools);
+  document.querySelector(`#schools ${where} [data-mine="${CSS.escape(id)}"]`)?.focus();
+});
 function $$fraser() {
   document.querySelectorAll('.fraser-form').forEach(f => f.addEventListener('submit', e => {
     e.preventDefault();
