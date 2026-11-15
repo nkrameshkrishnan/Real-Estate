@@ -278,12 +278,14 @@ async function analyse(input, pending = null) {
     $('#listingForm').reset();
     const saved = getListing(loc);
     const guessedType = (loc.unit || /apartments|condo/i.test(loc.osmBuildingType)) ? 'condoApt' : null;
-    fillForm({ ...(guessedType && !saved.type ? { type: guessedType } : {}), ...saved, ...(pending || {}), ...(listing || {}) });
+    // A saved entry with no price and the default "detached" type is just an untouched form — let the condo guess win
+    const typeIsDefault = !saved.type || (saved.type === 'detached' && !saved.listPrice && !saved.sqft);
+    fillForm({ ...saved, ...(guessedType && typeIsDefault ? { type: guessedType } : {}), ...(pending || {}), ...(listing || {}) });
     if (pending) saveListing(loc, { ...saved, ...pending });
     if (listing) saveListing(loc, { ...getListing(loc), ...listing });
     $('#listingMsg').textContent = listing ? `Loaded MLS® ${listing.mls} from DDF®${listing.brokerage ? ' — listed by ' + listing.brokerage : ''}.`
       : pending ? `Read MLS® ${pending.mls || ''} from the pasted listing${pending.brokerage ? ' — listed by ' + pending.brokerage.replace(/\.$/, '') : ''}.${pending.sqftRange ? ` Size given as ${pending.sqftRange} sq ft; using the midpoint.` : ''}`
-      : guessedType && !saved.type ? 'Looks like a condo unit — property type set to Condo apartment. Paste the listing to fill in the rest.' : '';
+      : guessedType && typeIsDefault ? 'Looks like a condo unit — property type set to Condo apartment. Paste the listing to fill in the rest.' : '';
     initMap(loc);
     status('');
     document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
