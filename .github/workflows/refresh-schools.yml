@@ -21,6 +21,13 @@ jobs:
           python3 -I scripts/build_schools.py /tmp/src/schools.txt data/schools-on.json
       - name: Locate schools (OpenStreetMap match + Nominatim geocoding)
         run: python3 -I scripts/school_coords.py
+      - name: Keep coordinates even if a later step fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: school-coords
+          path: data/school-coords.json
+          if-no-files-found: ignore
       - name: Rebuild with coordinates
         run: python3 -I scripts/build_schools.py /tmp/src/schools.txt data/schools-on.json
       - name: Commit if changed
@@ -28,4 +35,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/schools-on.json data/school-coords.json
-          if ! git diff --cached --quiet; then git commit -m "Refresh Ontario school list and locations" && git push; fi
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh Ontario school list and locations"
+            # main may have moved during a long run; these files are only written by this job
+            for i in 1 2 3; do git pull --rebase -X theirs origin main && git push && break; sleep 10; done
+          fi

@@ -74,6 +74,7 @@ for s in schools:
     if hit:
         coords[s["id"]] = [round(hit["lat"], 6), round(hit["lon"], 6), "osm"]; matched += 1
 print(f"matched via OSM this run: {matched}")
+json.dump(coords, open("data/school-coords.json", "w"), separators=(",", ":"))
 
 # 2. Nominatim for the rest
 todo = [s for s in schools if s["id"] not in coords][:MAX_GEOCODE]
