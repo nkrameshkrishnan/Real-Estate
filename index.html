@@ -54,6 +54,10 @@
             <textarea id="heroPasteText" aria-label="Pasted REALTOR.ca listing text" placeholder="Paste the listing page text here"></textarea>
             <button class="btn primary" type="button" id="heroPasteBtn">Get report from listing</button>
           </details>
+          <div class="bookmark-install">
+            <a class="btn bookmarklet" href="#" draggable="true" title="Drag me to your bookmarks bar">Send to Home Insight</a>
+            <p class="small muted">Drag this button to your bookmarks bar (press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> if the bar is hidden). Then, on any REALTOR.ca listing, click the bookmark and the report opens with the listing details filled in.</p>
+          </div>
         </div>
         <figure class="hero-map" aria-hidden="true"><svg id="contours" viewBox="0 0 600 520" preserveAspectRatio="xMidYMid slice"></svg></figure>
       </div>
@@ -97,8 +101,8 @@
             <p><strong>Listing details don’t fill in from an address alone.</strong> REALTOR.ca doesn’t share listing data publicly, so the report can only read a listing you give it:</p>
             <ol>
               <li><a class="btn" id="realtorMapLink" href="https://www.realtor.ca/" target="_blank" rel="noopener">Find this home on REALTOR.ca</a> and open its listing.</li>
-              <li>On the listing page press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>A</kbd>, then <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>C</kbd>.</li>
-              <li><button class="linkbtn" type="button" id="openPaste">Paste it here</button>. Price, MLS® number, type, size, age, taxes, condo fee and days on market fill in.</li>
+              <li>On the listing, click your <strong>Send to Home Insight</strong> bookmark. No bookmark yet? Drag <a class="bookmarklet" href="#" draggable="true">Send to Home Insight</a> to your bookmarks bar first.</li>
+              <li>Or copy the whole listing page (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>A</kbd>, then <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>C</kbd>) and <button class="linkbtn" type="button" id="openPaste">paste it here</button>.</li>
             </ol>
             <p class="small muted">Or type the details into the form. If you have a CREA DDF® data feed, add your proxy under Data sources and listings at an address fill in by themselves.</p>
           </div>
@@ -149,6 +153,8 @@
         <input id="ddfProxy" type="url" placeholder="https://ddf-proxy.your-account.workers.dev">
       </label>
       <p class="small muted">Optional. DDF® access requires data-feed credentials from a REALTOR® (CREA member). Deploy <code>proxy/ddf-worker.js</code> to Cloudflare Workers with your feed credentials as secrets, then paste its URL here. Credentials never go in this site.</p>
+      <h4>Send to Home Insight bookmark</h4>
+      <p class="small muted">Drag <a class="bookmarklet" href="#" draggable="true">Send to Home Insight</a> to your bookmarks bar. On a REALTOR.ca listing, click it to open this report with the listing filled in. It reads only the page you have open, when you click it, and the text never leaves your browser.</p>
       <h4>Sources used</h4>
       <ul class="small sources">
         <li>Geocoding &amp; map features: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (Nominatim, Overpass API)</li>
