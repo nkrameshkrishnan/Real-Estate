@@ -6,6 +6,7 @@ import { safetyFor } from './safety.js';
 import { schoolsNear, fraserKey, boardLocator, boardsFor, searchSchools } from './schools.js';
 import { floodCheck, powerLineCheck, radonCheck, ageRisks, vegetationCheck, guttersCheck } from './hazards.js';
 import { loadMarket, negotiate, getComps, setComps, parseCompsCsv, TYPE_LABEL } from './market.js';
+import { bookmarkletHref } from './bookmark.js';
 import { settings, fetchDDF, findDDFByAddress, getListing, saveListing, parseListingText, yearFromAge } from './mls.js';
 
 const state = { loc: null, osm: null, hz: null, map: null, layers: null, results: {} };
@@ -562,10 +563,7 @@ $('#ddfBtn').addEventListener('click', async () => {
 });
 $('#heroPasteBtn').addEventListener('click', () => {
   const p = parseListingText($('#heroPasteText').value);
-  if (!p.address) { status('Couldn’t find an address in the pasted text. Make sure you copied the whole REALTOR.ca listing page.', true); return; }
-  const q = `${p.address}, ${p.city || ''} ${p.postal || ''}`.trim();
-  $('#q').value = q; $('#heroPaste').open = false;
-  analyse(q, p);
+  if (startFromListing(p)) $('#heroPaste').open = false;
 });
 $('#listingPasteBtn').addEventListener('click', () => {
   if (!state.loc) return;
@@ -622,5 +620,29 @@ function drawContours() {
 drawContours();
 
 renderRecent();
-const initial = new URLSearchParams(location.hash.slice(1)).get('q');
-if (initial) { $('#q').value = initial; analyse(initial); }
+// Start a report from listing text: pasted on the landing page, or sent by the bookmark
+function startFromListing(p) {
+  if (!p.address) { status('Couldn’t find an address in that listing text. Open a single home’s listing page (not search results) and try again.', true); return false; }
+  const q = `${p.unit ? `Unit ${p.unit}, ` : ''}${p.address}, ${p.city || ''} ${p.postal || ''}`.trim();
+  $('#q').value = q;
+  analyse(q, p);
+  return true;
+}
+
+// The bookmark: its link is built for wherever this site is hosted
+const appUrl = location.origin + location.pathname;
+document.querySelectorAll('.bookmarklet').forEach(a => {
+  a.href = bookmarkletHref(appUrl);
+  a.addEventListener('click', e => { e.preventDefault(); status('Drag the Send to Home Insight button to your bookmarks bar, then click the bookmark while you’re on a REALTOR.ca listing.'); });
+});
+
+const hashParams = new URLSearchParams(location.hash.slice(1));
+const initial = hashParams.get('q');
+if (hashParams.has('paste')) {
+  // Sent by the bookmark: read it, then drop the page text from the address bar and history
+  const p = parseListingText(hashParams.get('paste') || '');
+  const from = hashParams.get('url') || '';
+  if (!p.url && /^https:\/\/www\.realtor\.ca\//i.test(from)) p.url = from;
+  history.replaceState(null, '', location.pathname);
+  startFromListing(p);
+} else if (initial) { $('#q').value = initial; analyse(initial); }

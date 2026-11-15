@@ -76,7 +76,7 @@ export const saveListing = (loc, l) => store.set(listingKey(loc), l);
 // Parse text copied from a REALTOR.ca listing page (Ctrl/Cmd+A, Ctrl/Cmd+C on the listing, then paste).
 // Copying a page you are viewing is not scraping: nothing is fetched from REALTOR.ca by this site.
 export function parseListingText(text) {
-  const t = String(text || '').replace(/\r/g, '');
+  const t = '\n' + String(text || '').replace(/\r/g, '');
   const after = (label) => {
     const re = new RegExp(`(?:^|\\n)\\s*${label}\\s*\\n\\s*([^\\n]+)`, 'i');
     const m = t.match(re); return m ? m[1].trim() : null;
@@ -86,7 +86,12 @@ export function parseListingText(text) {
   const mls = t.match(/MLS®?\s*(?:Number|#)\s*:?\s*([A-Z]?\d{6,9})/i); if (mls) out.mls = mls[1].toUpperCase();
   const price = t.match(/\n\s*\$\s?([\d,]{5,})(?:\s*\n|\s*$)/) || t.match(/\$\s?([\d,]{5,})/); if (price) out.listPrice = money(price[1]);
   const addr = t.match(/\n\s*([^\n]+?)\s*\n\s*([^\n]+?),\s*Ontario\s+([A-Z]\d[A-Z]\s?\d[A-Z]\d)/i);
-  if (addr) { out.address = addr[1].trim(); out.city = addr[2].trim(); out.postal = addr[3].toUpperCase(); }
+  if (addr) { out.address = addr[1].trim(); out.city = addr[2].replace(/\s*\([^)]*\)/, '').trim(); out.postal = addr[3].toUpperCase(); }
+  // Fallback: the page title the bookmark sends first, e.g. "For sale: 1203 - 25 THE ESPLANADE, Toronto (Waterfront Communities), Ontario M5E1W5 - C1234567 | REALTOR.ca"
+  if (!out.address) {
+    const tt = t.match(/\n[^\n:]*:\s*(?:([A-Z0-9-]+)\s+-\s+)?([^,\n]+),\s*([^,(\n]+?)\s*(?:\([^)]*\))?,\s*Ontario\s+([A-Z]\d[A-Z]\s?\d[A-Z]\d)/i);
+    if (tt) { out.address = tt[2].trim(); out.city = tt[3].trim(); out.postal = tt[4].toUpperCase(); if (tt[1]) out.unit = tt[1]; }
+  }
   const building = (after('Building Type') || '').toLowerCase();
   const title = (after('Title') || '').toLowerCase();
   const condo = /condominium|strata/.test(title) || /maintenance fees/i.test(t);

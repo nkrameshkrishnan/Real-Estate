@@ -134,7 +134,7 @@ kbd { font: inherit; font-size: .8em; font-weight: 600; border: 1px solid var(--
 /* once a report is open the title block condenses to a search strip, so the sheet owns the first screen */
 .has-report .hero { padding: 20px 0 4px; }
 .has-report .hero-grid { grid-template-columns: 1fr; }
-.has-report .hero h1, .has-report .lede, .has-report .hint, .has-report #heroPaste, .has-report .hero-map { display: none; }
+.has-report .hero h1, .has-report .lede, .has-report .hint, .has-report #heroPaste, .has-report .hero-map, .has-report .bookmark-install { display: none; }
 .has-report .search input, .has-report .search .btn { min-height: 48px; font-size: 1rem; }
 .has-report .recent { margin-top: 10px; }
 
@@ -380,3 +380,12 @@ dialog::backdrop { background: rgba(21,26,23,.45); }
 .listing-empty ol { margin: 6px 0 10px; padding-left: 22px; display: grid; gap: 8px; }
 .listing-empty li { padding-left: 2px; }
 .listing-empty .btn { min-height: 36px; padding: 6px 12px; font-size: .875rem; margin-right: 4px; }
+
+/* ---------- Send to Home Insight bookmark ---------- */
+.bookmark-install { margin-top: 18px; max-width: 680px; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; }
+.bookmark-install p { margin: 0; }
+.btn.bookmarklet { cursor: grab; border-style: dashed; }
+.btn.bookmarklet:active { cursor: grabbing; }
+a.bookmarklet:not(.btn) { font-weight: 650; cursor: grab; }
+@media (max-width: 520px) { .bookmark-install { grid-template-columns: 1fr; } .bookmark-install .btn { justify-self: start; } }
+@media (hover: none) and (pointer: coarse) { .bookmark-install { display: none; } }
