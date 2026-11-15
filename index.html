@@ -6,65 +6,93 @@
   <title>Ontario Home Insight — property due-diligence report</title>
   <meta name="description" content="Enter an Ontario address or MLS® listing link to see transit access, neighbourhood safety, nearby schools with Fraser ratings, market value and negotiation range, and property hazards.">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 15 16 5l12 10v12H4z' fill='%231f5f8b'/%3E%3Crect x='13' y='18' width='6' height='9' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 15 16 5l12 10v12H4z' fill='%23b4237a'/%3E%3Crect x='13' y='18' width='6' height='9' fill='%23fff'/%3E%3C/svg%3E">
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="sym-property" viewBox="0 0 28 16"><circle cx="14" cy="8" r="5.5" fill="none" stroke="var(--magenta)" stroke-width="1.6"/><circle cx="14" cy="8" r="2" fill="var(--magenta)"/></symbol>
+    <symbol id="sym-transit" viewBox="0 0 28 16"><path d="M2 8H26" stroke="var(--ink)" stroke-width="2"/><path d="M6 4.5v7M11 4.5v7M16 4.5v7M21 4.5v7" stroke="var(--ink)" stroke-width="1.2"/></symbol>
+    <symbol id="sym-safety" viewBox="0 0 28 16"><circle cx="14" cy="8" r="6.2" fill="none" stroke="var(--magenta)" stroke-width="1.4" stroke-dasharray="2.4 2"/></symbol>
+    <symbol id="sym-schools" viewBox="0 0 28 16"><rect x="10" y="7" width="7" height="7" fill="var(--ink)"/><path d="M10.6 7V1.8" stroke="var(--ink)" stroke-width="1.2"/><path d="M11 2h5.5l-1.6 1.7 1.6 1.7H11z" fill="var(--ink)"/></symbol>
+    <symbol id="sym-market" viewBox="0 0 28 16"><path d="M14 2.5 20.5 13.5H7.5z" fill="none" stroke="var(--contour)" stroke-width="1.6" stroke-linejoin="round"/><circle cx="14" cy="10" r="1.3" fill="var(--contour)"/></symbol>
+    <symbol id="sym-hazards" viewBox="0 0 28 16"><path d="M2 5.5c2-2.6 4-2.6 6 0s4 2.6 6 0 4-2.6 6 0 4 2.6 6 0" fill="none" stroke="var(--water)" stroke-width="1.8"/><path d="M2 12.5H26" stroke="var(--ink)" stroke-width="1.6" stroke-dasharray="3.5 2"/></symbol>
+    <symbol id="sym-rapid" viewBox="0 0 28 16"><circle cx="14" cy="8" r="4.5" fill="#fff" stroke="var(--ink)" stroke-width="2"/></symbol>
+    <symbol id="sym-water" viewBox="0 0 28 16"><path d="M2 8c2-2.6 4-2.6 6 0s4 2.6 6 0 4-2.6 6 0 4 2.6 6 0" fill="none" stroke="var(--water)" stroke-width="2"/></symbol>
+    <symbol id="sym-up" viewBox="0 0 9 8"><path d="M4.5 0 9 8H0z" fill="currentColor"/></symbol>
+    <symbol id="sym-down" viewBox="0 0 9 8"><path d="M0 0h9L4.5 8z" fill="currentColor"/></symbol>
+    <symbol id="sym-power" viewBox="0 0 28 16"><path d="M2 8H26" stroke="var(--ink)" stroke-width="1.8" stroke-dasharray="3.5 2"/></symbol>
+  </svg>
+  <a class="skip" href="#q">Skip to address search</a>
   <header class="topbar">
     <div class="wrap topbar-inner">
-      <a class="brand" href="./"><span class="logo" aria-hidden="true">⌂</span> Ontario Home Insight</a>
+      <a class="brand" href="./"><svg class="brand-mark" aria-hidden="true"><use href="#sym-property"/></svg><span>Ontario Home Insight</span></a>
       <nav class="topnav" aria-label="Report sections">
         <a href="#transit">Transit</a><a href="#safety">Safety</a><a href="#schools">Schools</a><a href="#market">Market</a><a href="#hazards">Hazards</a>
       </nav>
-      <button class="icon-btn" id="settingsBtn" type="button" aria-label="Data sources and settings" title="Data sources & settings">⚙</button>
+      <button class="btn quiet" id="settingsBtn" type="button" aria-haspopup="dialog">Data sources</button>
     </div>
   </header>
 
   <main>
     <section class="hero">
-      <div class="wrap">
-        <h1>Know the home before you offer.</h1>
-        <p class="lede">An Ontario due-diligence report from an address or an MLS® listing: transit, safety, schools &amp; Fraser ratings, price range, and property hazards.</p>
-        <form id="searchForm" class="search" autocomplete="off">
-          <label class="sr-only" for="q">Address, REALTOR.ca link or MLS® number</label>
-          <input id="q" name="q" type="text" placeholder="e.g. 100 Queen St W, Toronto  ·  or paste a REALTOR.ca listing link" required>
-          <button type="submit" class="btn primary" id="goBtn">Get report</button>
-        </form>
-        <details class="paste-box" id="heroPaste">
-          <summary>Or paste a whole REALTOR.ca listing page</summary>
-          <p class="small muted">On the listing page press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>A</kbd> then <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>C</kbd>, and paste here. Price, MLS® number, type, size, taxes, condo fee and days on market are filled in for you.</p>
-          <textarea id="heroPasteText" aria-label="Pasted REALTOR.ca listing text" placeholder="Paste the listing page text here"></textarea>
-          <button class="btn primary" type="button" id="heroPasteBtn">Get report from listing</button>
-        </details>
-        <p class="hint">Works across Ontario. Safety index currently uses Toronto Police open data; other areas link to their police service. <a href="#" id="exampleLink">Try an example</a></p>
-        <div id="recent" class="recent"></div>
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <h1>Know the home before you offer.</h1>
+          <p class="lede">A due-diligence report for any Ontario address or MLS® listing: transit, safety, schools with Fraser ratings, a price range to negotiate from, and property hazards.</p>
+          <form id="searchForm" class="search" autocomplete="off">
+            <label class="sr-only" for="q">Address, REALTOR.ca link or MLS® number</label>
+            <input id="q" name="q" type="text" placeholder="Address or REALTOR.ca listing link" required>
+            <button type="submit" class="btn primary" id="goBtn">Get report</button>
+          </form>
+          <p class="hint">For example <a href="#" id="exampleLink">25 The Esplanade, Toronto</a>. MLS® numbers work once a DDF® feed is set up under Data sources. The safety index uses Toronto Police open data for now.</p>
+          <div id="recent" class="recent" aria-label="Recent addresses"></div>
+          <details class="paste-box" id="heroPaste">
+            <summary>Paste a whole REALTOR.ca listing page instead</summary>
+            <p class="small muted">On the listing page press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>A</kbd> then <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>C</kbd>, and paste here. Price, MLS® number, type, size, age, taxes, condo fee and days on market are filled in for you.</p>
+            <textarea id="heroPasteText" aria-label="Pasted REALTOR.ca listing text" placeholder="Paste the listing page text here"></textarea>
+            <button class="btn primary" type="button" id="heroPasteBtn">Get report from listing</button>
+          </details>
+        </div>
+        <figure class="hero-map" aria-hidden="true"><svg id="contours" viewBox="0 0 600 520" preserveAspectRatio="xMidYMid slice"></svg></figure>
       </div>
     </section>
 
     <div id="status" class="wrap status" role="status" aria-live="polite"></div>
 
     <div id="report" class="wrap report" hidden>
-      <section class="report-head card">
-        <div>
-          <p class="eyebrow" id="locMuni"></p>
+      <section class="report-head">
+        <div class="report-title">
           <h2 id="locTitle"></h2>
-          <p class="muted small" id="locMeta"></p>
+          <p class="report-place"><span id="locMuni"></span></p>
+          <p class="coords" id="locMeta"></p>
         </div>
         <div class="head-actions">
           <button class="btn" type="button" id="shareBtn">Copy link</button>
-          <button class="btn" type="button" onclick="window.print()">Print / PDF</button>
+          <button class="btn" type="button" onclick="window.print()">Print or save PDF</button>
         </div>
       </section>
 
-      <section class="scores" id="scores" aria-label="Summary"></section>
-
-      <div class="grid-2">
-        <section class="card map-card"><div id="map" aria-label="Map of the property and nearby features"></div>
-          <div class="legend small"><span><i class="dot home"></i>Property</span><span><i class="dot school"></i>School</span><span><i class="dot rapid"></i>Rapid transit</span><span><i class="line power"></i>Power line</span><span><i class="line water"></i>Watercourse</span></div>
+      <div class="sheet">
+        <section class="map-panel" aria-label="Map">
+          <div class="neatline" id="mapWrap"><div id="map" aria-label="Map of the property and nearby features"></div></div>
+          <ul class="map-key small" aria-label="Map symbols">
+            <li><svg class="sym" aria-hidden="true"><use href="#sym-property"/></svg>Property</li><li><svg class="sym" aria-hidden="true"><use href="#sym-safety"/></svg>500 m radius</li><li><svg class="sym" aria-hidden="true"><use href="#sym-schools"/></svg>School</li><li><svg class="sym" aria-hidden="true"><use href="#sym-rapid"/></svg>Rapid transit</li><li><svg class="sym" aria-hidden="true"><use href="#sym-power"/></svg>Power line</li><li><svg class="sym" aria-hidden="true"><use href="#sym-water"/></svg>Watercourse</li>
+          </ul>
         </section>
-        <section class="card" id="listing">
-          <h3>MLS® listing details</h3>
-          <p class="muted small">Pulled from your REALTOR.ca DDF® feed when configured, otherwise enter them from the listing. Saved in this browser only.</p>
+        <section class="legend-panel" aria-labelledby="legendTitle">
+          <h3 id="legendTitle">Legend</h3>
+          <p class="small muted legend-hint">Five checks for this address. Select one to see it on the map.</p>
+          <div class="scores" id="scores"></div>
+        </section>
+      </div>
+
+      <section class="panel" id="listing">
+        <div class="panel-head">
+          <h3>Listing details</h3>
+          <p class="small muted">From your REALTOR.ca DDF® feed when set up, otherwise from the listing. Saved in this browser only.</p>
+        </div>
           <form id="listingForm" class="form-grid">
             <label>MLS® number<input name="mls" placeholder="e.g. C12345678"></label>
             <label>List price ($)<input name="listPrice" inputmode="numeric" placeholder="899000"></label>
@@ -72,7 +100,7 @@
               <select name="type">
                 <option value="detached">Detached</option><option value="semi">Semi-detached</option><option value="townhouse">Freehold townhouse</option><option value="condoTownhouse">Condo townhouse</option><option value="condoApt">Condo apartment</option>
               </select></label>
-            <label>Year built<input name="yearBuilt" placeholder="1965 or age, e.g. 31-50" title="Enter the year built, or the age range from the listing (e.g. 31-50, 100+, New)"></label>
+            <label>Year built<input name="yearBuilt" placeholder="1965, or age 31-50" title="Enter the year built, or the age range from the listing (e.g. 31-50, 100+, New)"></label>
             <label>Living area (sq ft)<input name="sqft" inputmode="numeric" placeholder="1450"></label>
             <label>Days on market<input name="dom" inputmode="numeric" placeholder="21"></label>
             <label>Price reductions<input name="reductions" inputmode="numeric" placeholder="0"></label>
@@ -92,14 +120,14 @@
             <button class="btn" type="button" id="listingPasteBtn">Read listing</button>
           </details>
           <p class="small" id="listingMsg"></p>
-        </section>
-      </div>
 
-      <section class="card" id="transit"><h3>Transit availability</h3><div class="body"><div class="skeleton"></div></div></section>
-      <section class="card" id="safety"><h3>Neighbourhood safety index</h3><div class="body"><div class="skeleton"></div></div></section>
-      <section class="card" id="schools"><h3>Schools near this address</h3><div class="body"><div class="skeleton"></div></div></section>
-      <section class="card" id="market"><h3>Market value &amp; negotiation range</h3><div class="body"><div class="skeleton"></div></div></section>
-      <section class="card" id="hazards"><h3>Property &amp; environmental hazards</h3><div class="body"><div class="skeleton"></div></div></section>
+        </section>
+
+      <section class="panel" id="transit"><div class="panel-head"><h3><svg class="sym" aria-hidden="true"><use href="#sym-transit"/></svg>Transit availability</h3></div><div class="body"><div class="skeleton"></div></div></section>
+      <section class="panel" id="safety"><div class="panel-head"><h3><svg class="sym" aria-hidden="true"><use href="#sym-safety"/></svg>Neighbourhood safety index</h3></div><div class="body"><div class="skeleton"></div></div></section>
+      <section class="panel" id="schools"><div class="panel-head"><h3><svg class="sym" aria-hidden="true"><use href="#sym-schools"/></svg>Schools near this address</h3></div><div class="body"><div class="skeleton"></div></div></section>
+      <section class="panel" id="market"><div class="panel-head"><h3><svg class="sym" aria-hidden="true"><use href="#sym-market"/></svg>Market value and negotiation range</h3></div><div class="body"><div class="skeleton"></div></div></section>
+      <section class="panel" id="hazards"><div class="panel-head"><h3><svg class="sym" aria-hidden="true"><use href="#sym-hazards"/></svg>Property and environmental hazards</h3></div><div class="body"><div class="skeleton"></div></div></section>
 
       <p class="disclaimer small">This report is informational and built from open data that can be incomplete or out of date. It is not a home inspection, appraisal, legal or financial advice. Confirm school boundaries with the school board, hazards with a licensed home inspector and your conservation authority, and pricing with a REALTOR®. The trademarks MLS®, Multiple Listing Service® and the associated logos identify professional services rendered by REALTOR® members of CREA. REALTOR® is a trademark controlled by CREA.</p>
     </div>
@@ -125,7 +153,7 @@
     </form>
   </dialog>
 
-  <footer class="footer"><div class="wrap small muted">Ontario Home Insight · static site, no tracking · data stays in your browser</div></footer>
+  <footer class="footer"><div class="wrap"><svg class="brand-mark" aria-hidden="true"><use href="#sym-property"/></svg><span>Ontario Home Insight</span><span class="muted">A static site with no tracking. Everything you enter stays in this browser.</span></div></footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script type="module" src="js/app.js"></script>

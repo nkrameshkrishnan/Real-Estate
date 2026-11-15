@@ -1,0 +1,600 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-15T02:30:21+00:00",
+  "title": "Design System: Ontario Home Insight",
+  "extensions": {
+    "colorMeta": {
+      "survey-magenta": {
+        "role": "primary",
+        "displayName": "Survey Magenta",
+        "tonalRamp": [
+          "#350016",
+          "#5a0031",
+          "#7f004e",
+          "#a50b6d",
+          "#cb3c8e",
+          "#f261b0",
+          "#ff92d4",
+          "#ffc7fc"
+        ],
+        "canonical": "oklch(52.3% 0.195 349.6)"
+      },
+      "survey-magenta-deep": {
+        "role": "primary",
+        "displayName": "Deep Survey Magenta",
+        "tonalRamp": [
+          "#350016",
+          "#5a0031",
+          "#7f004e",
+          "#a50b6d",
+          "#cb3c8e",
+          "#f261b0",
+          "#ff92d4",
+          "#ffc7fc"
+        ]
+      },
+      "survey-magenta-wash": {
+        "role": "primary",
+        "displayName": "Magenta Wash",
+        "tonalRamp": [
+          "#350016",
+          "#5a0031",
+          "#7f004e",
+          "#a50b6d",
+          "#cb3c8e",
+          "#f261b0",
+          "#ff92d4",
+          "#ffc7fc"
+        ]
+      },
+      "sheet-ink": {
+        "role": "neutral",
+        "displayName": "Sheet Ink",
+        "tonalRamp": [
+          "#080c0a",
+          "#202522",
+          "#3c413e",
+          "#595f5c",
+          "#797f7b",
+          "#9aa09c",
+          "#c0c6c2",
+          "#ebf0ed"
+        ],
+        "canonical": "oklch(21.1% 0.010 159.2)"
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "tonalRamp": [
+          "#080c0a",
+          "#202522",
+          "#3c413e",
+          "#595f5c",
+          "#797f7b",
+          "#9aa09c",
+          "#c0c6c2",
+          "#ebf0ed"
+        ]
+      },
+      "ink-tertiary": {
+        "role": "neutral",
+        "displayName": "Ink Tertiary",
+        "tonalRamp": [
+          "#080c0a",
+          "#202522",
+          "#3c413e",
+          "#595f5c",
+          "#797f7b",
+          "#9aa09c",
+          "#c0c6c2",
+          "#ebf0ed"
+        ]
+      },
+      "field-stroke": {
+        "role": "neutral",
+        "displayName": "Field Stroke",
+        "tonalRamp": [
+          "#080c0a",
+          "#202522",
+          "#3c413e",
+          "#595f5c",
+          "#797f7b",
+          "#9aa09c",
+          "#c0c6c2",
+          "#ebf0ed"
+        ]
+      },
+      "hairline-rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "tonalRamp": [
+          "#0a0c08",
+          "#222520",
+          "#3e413b",
+          "#5b5f59",
+          "#7b7f78",
+          "#9ca099",
+          "#c2c5bf",
+          "#edf0ea"
+        ],
+        "canonical": "oklch(86.2% 0.010 131.4)"
+      },
+      "map-paper": {
+        "role": "neutral",
+        "displayName": "Map Paper",
+        "tonalRamp": [
+          "#151a17",
+          "#2b312d",
+          "#48514c",
+          "#6c746f",
+          "#9aa29c",
+          "#cfd3cc",
+          "#e4e6e0",
+          "#fbfbf9"
+        ]
+      },
+      "paper-tone-2": {
+        "role": "neutral",
+        "displayName": "Paper Tone 2",
+        "tonalRamp": [
+          "#151a17",
+          "#2b312d",
+          "#48514c",
+          "#6c746f",
+          "#9aa29c",
+          "#cfd3cc",
+          "#e4e6e0",
+          "#fbfbf9"
+        ]
+      },
+      "paper-tone-3": {
+        "role": "neutral",
+        "displayName": "Paper Tone 3",
+        "tonalRamp": [
+          "#151a17",
+          "#2b312d",
+          "#48514c",
+          "#6c746f",
+          "#9aa29c",
+          "#cfd3cc",
+          "#e4e6e0",
+          "#fbfbf9"
+        ]
+      },
+      "field-white": {
+        "role": "neutral",
+        "displayName": "Field White",
+        "tonalRamp": [
+          "#151a17",
+          "#2b312d",
+          "#48514c",
+          "#6c746f",
+          "#9aa29c",
+          "#cfd3cc",
+          "#e4e6e0",
+          "#fbfbf9"
+        ]
+      },
+      "contour-brown": {
+        "role": "secondary",
+        "displayName": "Contour Brown",
+        "tonalRamp": [
+          "#240000",
+          "#431200",
+          "#633000",
+          "#854e20",
+          "#a76e41",
+          "#cb8f62",
+          "#eeb78f",
+          "#ffe4c2"
+        ],
+        "canonical": "oklch(54.8% 0.095 57.8)"
+      },
+      "contour-faint": {
+        "role": "secondary",
+        "displayName": "Contour Faint",
+        "tonalRamp": [
+          "#240000",
+          "#431200",
+          "#633000",
+          "#854e20",
+          "#a76e41",
+          "#cb8f62",
+          "#eeb78f",
+          "#ffe4c2"
+        ]
+      },
+      "water-blue": {
+        "role": "secondary",
+        "displayName": "Water Blue",
+        "tonalRamp": [
+          "#00013b",
+          "#00225a",
+          "#00417c",
+          "#13619e",
+          "#3b82c2",
+          "#5da4e6",
+          "#8ccaff",
+          "#c1f4ff"
+        ],
+        "canonical": "oklch(54.5% 0.121 248.6)"
+      },
+      "water-wash": {
+        "role": "secondary",
+        "displayName": "Water Wash",
+        "tonalRamp": [
+          "#00013b",
+          "#00225a",
+          "#00417c",
+          "#13619e",
+          "#3b82c2",
+          "#5da4e6",
+          "#8ccaff",
+          "#c1f4ff"
+        ]
+      },
+      "woodland-green": {
+        "role": "tertiary",
+        "displayName": "Woodland Green",
+        "tonalRamp": [
+          "#001400",
+          "#003000",
+          "#0d4e0c",
+          "#316d2e",
+          "#528e4e",
+          "#73b16e",
+          "#9ed599",
+          "#cffdcb"
+        ],
+        "canonical": "oklch(47.2% 0.114 142.7)"
+      },
+      "woodland-wash": {
+        "role": "tertiary",
+        "displayName": "Woodland Wash",
+        "tonalRamp": [
+          "#001400",
+          "#003000",
+          "#0d4e0c",
+          "#316d2e",
+          "#528e4e",
+          "#73b16e",
+          "#9ed599",
+          "#cffdcb"
+        ]
+      },
+      "verdict-ok": {
+        "role": "status",
+        "displayName": "Verdict OK Blue",
+        "tonalRamp": [
+          "#00013b",
+          "#00225a",
+          "#00417c",
+          "#13619e",
+          "#3b82c2",
+          "#5da4e6",
+          "#8ccaff",
+          "#c1f4ff"
+        ]
+      },
+      "verdict-warn": {
+        "role": "status",
+        "displayName": "Verdict Ochre",
+        "tonalRamp": [
+          "#250000",
+          "#441200",
+          "#643000",
+          "#864f00",
+          "#a86f2c",
+          "#cc904f",
+          "#eeb880",
+          "#ffe5b6"
+        ],
+        "canonical": "oklch(49.4% 0.109 66.9)"
+      },
+      "verdict-warn-wash": {
+        "role": "status",
+        "displayName": "Ochre Wash",
+        "tonalRamp": [
+          "#250000",
+          "#441200",
+          "#643000",
+          "#864f00",
+          "#a86f2c",
+          "#cc904f",
+          "#eeb880",
+          "#ffe5b6"
+        ]
+      },
+      "verdict-bad": {
+        "role": "status",
+        "displayName": "Verdict Brick",
+        "tonalRamp": [
+          "#380000",
+          "#5d0000",
+          "#820000",
+          "#a8261c",
+          "#ce4c3d",
+          "#f56f5e",
+          "#ff9d8c",
+          "#ffd0bf"
+        ],
+        "canonical": "oklch(48.1% 0.168 29.3)"
+      },
+      "verdict-bad-wash": {
+        "role": "status",
+        "displayName": "Brick Wash",
+        "tonalRamp": [
+          "#380000",
+          "#5d0000",
+          "#820000",
+          "#a8261c",
+          "#ce4c3d",
+          "#f56f5e",
+          "#ff9d8c",
+          "#ffd0bf"
+        ]
+      },
+      "verdict-unknown": {
+        "role": "status",
+        "displayName": "Verdict Unknown Grey",
+        "tonalRamp": [
+          "#080c0a",
+          "#202522",
+          "#3c413e",
+          "#595f5c",
+          "#797f7b",
+          "#9aa09c",
+          "#c0c6c2",
+          "#ebf0ed"
+        ]
+      },
+      "verdict-unknown-wash": {
+        "role": "status",
+        "displayName": "Unknown Wash",
+        "tonalRamp": [
+          "#080c0a",
+          "#202522",
+          "#3c413e",
+          "#595f5c",
+          "#797f7b",
+          "#9aa09c",
+          "#c0c6c2",
+          "#ebf0ed"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Landing sheet name only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The report's address title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section and legend headings, led by a legend symbol."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Score, KPI and offer values; tabular, condensed."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Reading text, 54-62ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Form labels, offer keys, scale-bar ticks."
+      },
+      "map-lettering": {
+        "displayName": "Map Lettering",
+        "purpose": "Coordinate ticks, scale line, contour labels; haloed in paper."
+      }
+    },
+    "shadows": [
+      {
+        "name": "dialog-lift",
+        "value": "0 18px 40px -12px rgba(21,26,23,.35)",
+        "purpose": "Settings dialog only, over a rgba(21,26,23,.45) backdrop."
+      },
+      {
+        "name": "cell-hairline",
+        "value": "inset 1px 0 0 var(--ink)",
+        "purpose": "Divider between offer-table and KPI cells; not elevation."
+      },
+      {
+        "name": "field-focus-halo",
+        "value": "0 0 0 3px var(--magenta-soft)",
+        "purpose": "Focus halo on form fields."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Single easing for all state transitions."
+      },
+      {
+        "name": "t-fast",
+        "value": "160ms",
+        "purpose": "Colour, border and underline shifts."
+      },
+      {
+        "name": "t-med",
+        "value": "240ms",
+        "purpose": "Legend-row and section settle (opacity + 4px rise); map layer focus fades."
+      },
+      {
+        "name": "contour-draw",
+        "value": "1400ms, staggered",
+        "purpose": "One-time contour draw behind the landing title block; pin appears at 900ms."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "1ms",
+        "purpose": "All animation and transition collapsed under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "1000px"
+      },
+      {
+        "name": "tablet",
+        "value": "760px"
+      },
+      {
+        "name": "phone",
+        "value": "520px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Survey-magenta action; one per region.",
+      "html": "<button class=\"ds-btn-primary\">Get report</button>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-btn-primary{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:.9375rem;font-weight:600;line-height:1.2;display:inline-flex;align-items:center;min-height:40px;padding:9px 16px;border:1.5px solid var(--ink,#151a17);border-radius:2px;cursor:pointer;transition:transform 250ms var(--ease),background-color 160ms var(--ease),color 160ms var(--ease),border-color 160ms var(--ease);background:var(--magenta,#b4237a);border-color:var(--magenta,#b4237a);color:#fff}.ds-btn-primary:hover{background:var(--magenta-dark,#8f1a60);border-color:var(--magenta-dark,#8f1a60);transform:scale(1.01)}.ds-btn-primary:active{transform:scale(.99)}.ds-btn-primary:focus-visible{outline:2px solid var(--magenta,#b4237a);outline-offset:2px;}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Inked outline on paper for secondary actions.",
+      "html": "<button class=\"ds-btn\">Print or save PDF</button>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-btn{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:.9375rem;font-weight:600;line-height:1.2;display:inline-flex;align-items:center;min-height:40px;padding:9px 16px;border:1.5px solid var(--ink,#151a17);border-radius:2px;cursor:pointer;transition:transform 250ms var(--ease),background-color 160ms var(--ease),color 160ms var(--ease),border-color 160ms var(--ease);background:var(--paper,#fbfbf9);color:var(--ink,#151a17)}.ds-btn:hover{background:var(--paper-2,#f0f1ed);transform:scale(1.01)}.ds-btn:active{transform:scale(.99)}.ds-btn:focus-visible{outline:2px solid var(--magenta,#b4237a);outline-offset:2px;}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Borderless action for low-priority links such as Open REALTOR.ca.",
+      "html": "<button class=\"ds-btn-ghost\">Open REALTOR.ca</button>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-btn-ghost{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:.9375rem;font-weight:600;line-height:1.2;display:inline-flex;align-items:center;min-height:40px;padding:9px 16px;border:1.5px solid var(--ink,#151a17);border-radius:2px;cursor:pointer;transition:transform 250ms var(--ease),background-color 160ms var(--ease),color 160ms var(--ease),border-color 160ms var(--ease);background:transparent;border-color:transparent;color:var(--ink,#151a17)}.ds-btn-ghost:hover{background:var(--paper-2,#f0f1ed)}.ds-btn-ghost:focus-visible{outline:2px solid var(--magenta,#b4237a);outline-offset:2px;}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled field with magenta focus border and wash halo.",
+      "html": "<label class=\"ds-label\">List price ($)<input class=\"ds-input\" inputmode=\"numeric\" placeholder=\"899000\"></label>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-label{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;display:grid;gap:6px;font-size:.875rem;font-weight:600;color:var(--ink,#151a17);max-width:240px}.ds-input{font:inherit;font-size:1rem;font-weight:400;color:var(--ink,#151a17);background:#fff;padding:9px 11px;min-height:42px;border:1.5px solid #9aa29c;border-radius:2px;caret-color:var(--magenta,#b4237a);transition:border-color 160ms var(--ease),box-shadow 160ms var(--ease)}.ds-input::placeholder{color:#66706a}.ds-input:hover{border-color:var(--ink-2,#48514c)}.ds-input:focus{outline:none;border-color:var(--magenta,#b4237a);box-shadow:0 0 0 3px var(--magenta-soft,#f6e3ee)}"
+    },
+    {
+      "name": "Title-block Search",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "The landing address field fused to the primary action.",
+      "html": "<form class=\"ds-search\" onsubmit=\"return false\"><input class=\"ds-search-in\" placeholder=\"Address or REALTOR.ca listing link\" aria-label=\"Address\"><button class=\"ds-search-btn\">Get report</button></form>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-search{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;display:flex;max-width:560px}.ds-search-in{flex:1;min-width:0;font:inherit;font-size:1.125rem;min-height:56px;padding:14px 16px;border:2px solid var(--ink,#151a17);border-right:0;border-radius:2px 0 0 2px;background:#fff;color:var(--ink,#151a17);caret-color:var(--magenta,#b4237a)}.ds-search-in:focus{outline:none;border-color:var(--magenta,#b4237a)}.ds-search-btn{font:inherit;font-size:1.0625rem;font-weight:600;min-height:56px;padding:0 26px;background:var(--magenta,#b4237a);color:#fff;border:1.5px solid var(--magenta,#b4237a);border-radius:0 2px 2px 0;cursor:pointer;transition:background-color 160ms var(--ease)}.ds-search-btn:hover{background:var(--magenta-dark,#8f1a60);border-color:var(--magenta-dark,#8f1a60)}.ds-search-btn:focus-visible{outline:2px solid var(--magenta,#b4237a);outline-offset:2px;}"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Sticky map-paper bar closed by a 2px ink rule.",
+      "html": "<header class=\"ds-topbar\"><a class=\"ds-brand\" href=\"#\"><svg width=\"28\" height=\"16\" viewBox=\"0 0 28 16\" aria-hidden=\"true\"><circle cx=\"14\" cy=\"8\" r=\"5.5\" fill=\"none\" stroke=\"#b4237a\" stroke-width=\"1.6\"/><circle cx=\"14\" cy=\"8\" r=\"2\" fill=\"#b4237a\"/></svg><span>Ontario Home Insight</span></a><nav class=\"ds-nav\"><a href=\"#\">Transit</a><a href=\"#\">Safety</a><a href=\"#\">Schools</a><a href=\"#\">Market</a><a href=\"#\">Hazards</a></nav></header>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-topbar{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:24px;height:60px;padding:0 24px;background:var(--paper,#fbfbf9);border-bottom:2px solid var(--ink,#151a17)}.ds-brand{display:inline-flex;align-items:center;gap:8px;font-weight:750;font-size:1.0625rem;letter-spacing:-.01em;color:var(--ink,#151a17);text-decoration:none}.ds-nav{display:flex;gap:2px;margin-left:auto}.ds-nav a{color:var(--ink-2,#48514c);text-decoration:none;padding:8px 12px;font-size:.9375rem;font-variation-settings:'wdth' 88;border-radius:2px;transition:color 160ms var(--ease),background-color 160ms var(--ease)}.ds-nav a:hover{color:var(--ink,#151a17);background:var(--paper-2,#f0f1ed)}.ds-nav a:focus-visible,.ds-brand:focus-visible{outline:2px solid var(--magenta,#b4237a);outline-offset:2px;}"
+    },
+    {
+      "name": "Recent Address Chip",
+      "kind": "chip",
+      "refersTo": "chip-recent",
+      "description": "Recall chip with a survey-magenta ring pip.",
+      "html": "<button class=\"ds-chip\">25 The Esplanade, Toronto</button>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-chip{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:.875rem;display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:5px 12px 5px 10px;border:1px solid var(--rule,#cfd3cc);border-radius:2px;background:#fff;color:var(--ink,#151a17);cursor:pointer;transition:border-color 160ms var(--ease),transform 250ms var(--ease)}.ds-chip::before{content:'';width:7px;height:7px;border-radius:50%;border:1.5px solid var(--magenta,#b4237a)}.ds-chip:hover{border-color:var(--ink,#151a17);transform:scale(1.01)}.ds-chip:focus-visible{outline:2px solid var(--magenta,#b4237a);outline-offset:2px;}"
+    },
+    {
+      "name": "Verdict Tags",
+      "kind": "chip",
+      "refersTo": "verdict-good",
+      "description": "Status tags in the map inks: good, ok, warn, bad, unknown.",
+      "html": "<div class=\"ds-tags\"><span class=\"ds-tag good\">Good</span><span class=\"ds-tag ok\">Moderate</span><span class=\"ds-tag warn\">Check</span><span class=\"ds-tag bad\">High priority</span><span class=\"ds-tag unk\">Unknown</span></div>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-tags{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;display:flex;gap:8px;flex-wrap:wrap}.ds-tag{font-size:.75rem;font-weight:700;padding:2px 7px;border-radius:2px;white-space:nowrap}.ds-tag.good{background:var(--good-bg);color:var(--good)}.ds-tag.ok{background:var(--ok-bg);color:var(--ok)}.ds-tag.warn{background:var(--warn-bg);color:var(--warn)}.ds-tag.bad{background:var(--bad-bg);color:var(--bad)}.ds-tag.unk{background:var(--unk-bg);color:var(--unk)}"
+    },
+    {
+      "name": "Legend Row",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Signature: a score as a legend entry keyed to its map layer.",
+      "html": "<div class=\"ds-scores\"><a class=\"ds-score\" href=\"#\"><svg class=\"ds-sym\" viewBox=\"0 0 28 16\" aria-hidden=\"true\"><circle cx=\"14\" cy=\"8\" r=\"6.2\" fill=\"none\" stroke=\"#b4237a\" stroke-width=\"1.4\" stroke-dasharray=\"2.4 2\"/></svg><span class=\"ds-k\">Safety index</span><span class=\"ds-v\">10<small>/100</small></span><span class=\"ds-s\"><span class=\"ds-tag\">High priority</span>Well above city average</span></a><a class=\"ds-score\" href=\"#\"><svg class=\"ds-sym\" viewBox=\"0 0 28 16\" aria-hidden=\"true\"><path d=\"M2 8H26\" stroke=\"#151a17\" stroke-width=\"2\"/><path d=\"M6 4.5v7M11 4.5v7M16 4.5v7M21 4.5v7\" stroke=\"#151a17\" stroke-width=\"1.2\"/></svg><span class=\"ds-k\">Transit</span><span class=\"ds-v\">72<small>/100</small></span><span class=\"ds-s\"><span class=\"ds-tag good\">Good</span>Two rapid stations within 800 m</span></a></div>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-scores{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;display:grid;border-top:2px solid var(--ink,#151a17);max-width:420px}.ds-score{display:grid;grid-template-columns:38px minmax(0,1fr) auto;grid-template-areas:'sym k v' 'sym s s';column-gap:12px;row-gap:2px;align-items:baseline;padding:14px 10px 14px 4px;border-bottom:1px solid var(--rule,#cfd3cc);color:var(--ink,#151a17);text-decoration:none;transition:background-color 160ms var(--ease)}.ds-sym{grid-area:sym;align-self:center;width:34px;height:20px;transition:transform 240ms var(--ease)}.ds-k{grid-area:k;font-weight:650;text-decoration:underline;text-decoration-color:transparent;text-decoration-thickness:1.5px;text-underline-offset:4px;transition:text-decoration-color 160ms var(--ease)}.ds-v{grid-area:v;font-size:1.625rem;font-weight:750;line-height:1;letter-spacing:-.02em;font-variation-settings:'wdth' 85;text-align:right}.ds-v small{font-size:.55em;font-weight:600;color:var(--ink-2,#48514c)}.ds-s{grid-area:s;font-size:.875rem;color:var(--ink-2,#48514c);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.ds-tag{font-size:.75rem;font-weight:700;padding:2px 7px;border-radius:2px;background:var(--bad-bg);color:var(--bad)}.ds-tag.good{background:var(--good-bg);color:var(--good)}.ds-score:hover,.ds-score:focus-visible{background:var(--paper-2,#f0f1ed)}.ds-score:hover .ds-k,.ds-score:focus-visible .ds-k{text-decoration-color:var(--magenta,#b4237a)}.ds-score:hover .ds-sym,.ds-score:focus-visible .ds-sym{transform:scale(1.12)}.ds-score:focus-visible{outline:2px solid var(--magenta,#b4237a);outline-offset:-2px}"
+    },
+    {
+      "name": "Neat-line Frame",
+      "kind": "card",
+      "refersTo": null,
+      "description": "Signature: double ink frame with coordinate ticks around every map figure.",
+      "html": "<figure class=\"ds-neat\"><div class=\"ds-neat-map\"></div><svg class=\"ds-ticks\" viewBox=\"0 0 320 200\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path d=\"M64 0v8M128 0v8M192 0v8M256 0v8M64 200v-8M128 200v-8M192 200v-8M256 200v-8M0 50h8M0 100h8M0 150h8M320 50h-8M320 100h-8M320 150h-8\" stroke=\"#151a17\" stroke-width=\"1.5\"/><text x=\"70\" y=\"20\">79.380° W</text><text x=\"12\" y=\"96\">43.645° N</text></svg></figure>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-neat{position:relative;margin:0;width:320px;height:200px;border:2px solid var(--ink,#151a17);padding:6px;background:var(--paper,#fbfbf9)}.ds-neat::after{content:'';position:absolute;inset:6px;border:1px solid var(--ink,#151a17);pointer-events:none}.ds-neat-map{height:100%;background:var(--paper-2,#f0f1ed)}.ds-ticks{position:absolute;inset:0;width:100%;height:100%}.ds-ticks text{font:600 10.5px Archivo,sans-serif;font-variation-settings:'wdth' 78;fill:#151a17;paint-order:stroke;stroke:#fbfbf9;stroke-width:6px;stroke-linejoin:round}"
+    },
+    {
+      "name": "Negotiation Scale Bar",
+      "kind": "custom",
+      "refersTo": "offer-target-cell",
+      "description": "Signature: price range drawn as a map scale bar with a magenta target tick.",
+      "html": "<figure class=\"ds-scale\"><div class=\"ds-bar\"><i class=\"ds-seg\" style=\"left:10%;right:15%\"></i><i class=\"ds-mk\" style=\"left:52%\"></i></div><div class=\"ds-ticks\"><span style=\"left:10%\">Open <b>$1.18M</b></span><span style=\"left:52%\">Target <b>$1.24M</b></span><span style=\"left:85%\">Walk away <b>$1.29M</b></span></div></figure>",
+      "css": ":host{--paper:#fbfbf9;--paper-2:#f0f1ed;--ink:#151a17;--ink-2:#48514c;--rule:#cfd3cc;--contour:#9a6235;--water:#2c74b3;--magenta:#b4237a;--magenta-dark:#8f1a60;--magenta-soft:#f6e3ee;--good:#2f6b2c;--good-bg:#dfecd8;--ok:#2a659c;--ok-bg:#dfeaf5;--warn:#8a5300;--warn-bg:#f6e8cf;--bad:#a8261c;--bad-bg:#f8e1de;--unk:#5a625d;--unk-bg:#e8eae5;--ease:cubic-bezier(0.22,1,0.36,1)} .ds-scale{font-family:Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;margin:0;max-width:520px}.ds-bar{position:relative;height:12px;background:#fff;box-shadow:inset 0 0 0 1.5px var(--ink,#151a17)}.ds-seg{position:absolute;top:0;bottom:0;background:var(--ink,#151a17)}.ds-mk{position:absolute;top:-6px;width:2px;height:22px;background:var(--magenta,#b4237a);transform:translateX(-1px)}.ds-ticks{position:relative;height:36px;font-size:.875rem;color:var(--ink-2,#48514c);font-variation-settings:'wdth' 78}.ds-ticks span{position:absolute;top:8px;transform:translateX(-50%);white-space:nowrap}.ds-ticks b{color:var(--ink,#151a17);font-weight:650}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Map Sheet for One Property",
+    "overview": "Every report is a Canadian NTS 1:50 000 topographic sheet drawn for a single address. The page is bright map paper; everything on it is linework and lettering in the inks a cartographer would use: black for the built world, contour brown for terrain and value, water blue for watercourses and flood information, woodland green for good news, and survey magenta for the one thing the sheet is about. The address is the sheet title, the latitude and longitude are its sheet coordinates, and the five checks are a legend whose symbols also mark the map.\n\nDensity is that of a working document, not a brochure. Sections are separated by heavy ink rules and paper tone steps, not cards or shadows. One grotesque, Archivo, carries every role, changing width rather than family: condensed for map lettering and figures, normal for reading. Every number is set in tabular figures so prices, distances and ratios align like a margin table.\n\nThe system refuses the category default for property tools: white cards with a brand-blue button and a coloured top border on each score tile.",
+    "keyCharacteristics": [
+      "Map-paper ground (#fbfbf9) with black ink linework; no cards, no drop shadows on content.",
+      "Survey magenta marks only the subject property, the primary action and the target price.",
+      "A double neat-line frame (2px outer, 1px inner at 6px inset) with coordinate ticks around map figures.",
+      "One typeface (Archivo variable) using its width axis; tabular figures everywhere.",
+      "One legend keys every symbol and status colour across map, scores and section headings.",
+      "Near-square corners (2px) on controls; zero radius on frames, tables and dialogs."
+    ],
+    "rules": [
+      {
+        "name": "The Survey Mark Rule",
+        "body": "Survey magenta is reserved for the subject property, the primary action and the target price (plus focus, selection and link underlines, which point at the same \"here\"). It never colours a status, a section, a chart series or decoration. If two magenta fills compete in one viewport, one of them is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Legend Rule",
+        "body": "A colour or symbol means the same thing on the map, in the legend row and in the section heading. Introduce a new ink only together with its legend entry.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "`font-variant-numeric: tabular-nums` is set at the root; never switch it off. Prices, distances, ratios and coordinates must align in columns.",
+        "section": "typography"
+      },
+      {
+        "name": "The Width-Not-Family Rule",
+        "body": "For a denser or more technical register, narrow Archivo (`'wdth' 78–92`) instead of reaching for another typeface.",
+        "section": "typography"
+      },
+      {
+        "name": "The Linework-Not-Lift Rule",
+        "body": "Separate regions with an ink rule or a tone step. A drop shadow is permitted only on a true modal overlay.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** frame every map figure in the neat line (2px ink outer, 1px inner at 6px inset) with coordinate ticks in map lettering.",
+      "**Do** open each report section with a 2px ink rule and its legend symbol beside the title.",
+      "**Do** key every new status or layer to the legend: same symbol and ink on the map, the legend row and the section heading.",
+      "**Do** set every number in tabular Archivo; narrow the width axis for figures and map lettering.",
+      "**Do** separate regions with linework and paper tone steps (map paper, tone 2, tone 3).",
+      "**Do** keep motion to state: 160ms colour shifts, 240ms settles, the one-time contour draw, all collapsed under reduced motion.",
+      "**Do** show unknown as its own grey verdict rather than leaving a gap."
+    ],
+    "donts": [
+      "**Don't** use survey magenta for anything other than the subject property, the primary action, the target price and focus or link marks.",
+      "**Don't** put content in white cards with drop shadows or coloured top borders; the only shadow belongs to the modal dialog.",
+      "**Don't** introduce a second typeface or an icon font; symbols are inline SVG map symbols from the shared set.",
+      "**Don't** round frames, tables or panels; controls stay at 2px.",
+      "**Don't** use a verdict ink outside a verdict tag, badge or trend mark; status colours are not section or chart colours."
+    ]
+  }
+}
