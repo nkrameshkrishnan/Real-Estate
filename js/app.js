@@ -216,7 +216,7 @@ function renderSchools(r) {
     return hx && ry !== rx ? ry - rx : (x.d ?? 1e9) - (y.d ?? 1e9);
   });
   const levels = rows => [['Elementary', rows.filter(x => x.level === 'Elementary')], ['Secondary', rows.filter(x => x.level === 'Secondary')], ['Other', rows.filter(x => x.level !== 'Elementary' && x.level !== 'Secondary')]];
-  const table = (title, rows) => rows.length ? `<h4 class="school-level">${title}</h4><div class="table-wrap"><table><thead><tr><th>School</th><th class="num">Distance</th><th class="num" aria-sort="descending">Fraser rating</th></tr></thead><tbody>${byRating(rows).map(x => schoolRow(x, mineIds.has(x.id))).join('')}</tbody></table></div>` : '';
+  const table = (title, rows) => rows.length ? `<h4 class="school-level">${title}</h4><div class="table-wrap"><table class="school-table"><thead><tr><th>School</th><th class="num">Distance</th><th class="num" aria-sort="descending">Fraser rating</th></tr></thead><tbody>${byRating(rows).map(x => schoolRow(x, mineIds.has(x.id))).join('')}</tbody></table></div>` : '';
 
   // Legend row: about the schools this child can attend, not every school nearby
   const rated = mine.filter(x => x.fraser?.rating != null && x.fraser.rating !== '');
@@ -230,7 +230,7 @@ function renderSchools(r) {
   const wasOpen = document.querySelector('#schools details.all-schools')?.open;
   section('schools', `
     <div class="zoned">
-      <h4>Schools your child can attend</h4>
+      <h4 class="zoned-title">Schools your child can attend</h4>
       ${mine.length ? levels(mine).map(([t, rows]) => table(t, rows)).join('') : `<p class="empty-note">No schools marked yet. Each board below sets its own attendance areas: check this address with the boards you’re considering, then tick <strong>My school</strong> next to the schools they name in the list below.</p>`}
     </div>
     <div class="boards">
@@ -253,7 +253,7 @@ function renderSchools(r) {
   const showHits = (q, hits) => {
     const ids = new Set(getMine(state.loc).map(m => m.id));
     $('#schoolQ').value = q;
-    $('#schoolResults').innerHTML = hits.length ? `<div class="table-wrap"><table><tbody>${hits.map(x => schoolRow(x, ids.has(x.id))).join('')}</tbody></table></div>` : `<p class="small muted">No Ontario school name contains “${esc(q)}”. Try a shorter part of the name.</p>`;
+    $('#schoolResults').innerHTML = hits.length ? `<div class="table-wrap"><table class="school-table"><tbody>${hits.map(x => schoolRow(x, ids.has(x.id))).join('')}</tbody></table></div>` : `<p class="small muted">No Ontario school name contains “${esc(q)}”. Try a shorter part of the name.</p>`;
   };
   if (lastSearch && lastSearch.loc === state.loc) showHits(lastSearch.q, lastSearch.hits);
   $('#schoolSearch').addEventListener('submit', async e => {
