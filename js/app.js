@@ -6,7 +6,7 @@ import { safetyFor } from './safety.js';
 import { schoolsNear, fraserKey, boardLocator } from './schools.js';
 import { floodCheck, powerLineCheck, radonCheck, ageRisks, vegetationCheck, guttersCheck } from './hazards.js';
 import { loadMarket, negotiate, getComps, setComps, parseCompsCsv, TYPE_LABEL } from './market.js';
-import { settings, fetchDDF, getListing, saveListing, parseListingText } from './mls.js';
+import { settings, fetchDDF, getListing, saveListing, parseListingText, yearFromAge } from './mls.js';
 
 const state = { loc: null, osm: null, hz: null, map: null, layers: null, results: {} };
 const MLS_RE = /^[A-Z]?\d{7,9}$/i;
@@ -151,7 +151,9 @@ function $$fraser() {
 function listingFromForm() {
   const f = $('#listingForm');
   const num = n => { const v = Number(String(f[n].value).replace(/[$,\s]/g, '')); return f[n].value.trim() === '' || isNaN(v) ? null : v; };
-  return { mls: f.mls.value.trim(), listPrice: num('listPrice'), type: f.type.value, yearBuilt: num('yearBuilt'), sqft: num('sqft'), dom: num('dom'), reductions: num('reductions'), beds: num('beds'), taxes: num('taxes'), fee: num('fee') };
+  // Year built also accepts an age range typed straight from a listing ("31-50", "100+", "New")
+  const yb = num('yearBuilt') ?? yearFromAge(f.yearBuilt.value)?.year ?? null;
+  return { mls: f.mls.value.trim(), listPrice: num('listPrice'), type: f.type.value, yearBuilt: yb, sqft: num('sqft'), dom: num('dom'), reductions: num('reductions'), beds: num('beds'), taxes: num('taxes'), fee: num('fee') };
 }
 function fillForm(l) {
   const f = $('#listingForm');
@@ -292,7 +294,7 @@ async function analyse(input, pending = null) {
     if (pending) saveListing(loc, { ...saved, ...pending });
     if (listing) saveListing(loc, { ...getListing(loc), ...listing });
     $('#listingMsg').textContent = listing ? `Loaded MLS® ${listing.mls} from DDF®${listing.brokerage ? ' — listed by ' + listing.brokerage : ''}.`
-      : pending ? `Read MLS® ${pending.mls || ''} from the pasted listing${pending.brokerage ? ' — listed by ' + pending.brokerage.replace(/\.$/, '') : ''}.${pending.sqftRange ? ` Size given as ${pending.sqftRange} sq ft; using the midpoint.` : ''}`
+      : pending ? `Read MLS® ${pending.mls || ''} from the pasted listing${pending.brokerage ? ' — listed by ' + pending.brokerage.replace(/\.$/, '') : ''}.${pending.sqftRange ? ` Size given as ${pending.sqftRange} sq ft; using the midpoint.` : ''}${pending.yearBuiltNote ? ' ' + pending.yearBuiltNote : ''}`
       : guessedType && typeIsDefault ? 'Looks like a condo unit — property type set to Condo apartment. Paste the listing to fill in the rest.' : '';
     initMap(loc);
     status('');
@@ -371,7 +373,7 @@ $('#listingPasteBtn').addEventListener('click', () => {
   if (!fields.length) { $('#listingMsg').textContent = 'Nothing recognised in the pasted text — copy the whole REALTOR.ca listing page.'; return; }
   fillForm(p); saveListing(state.loc, { ...listingFromForm() });
   if (p.url) { $('#realtorLink').href = p.url; $('#realtorLink').textContent = 'View listing on REALTOR.ca'; }
-  $('#listingMsg').textContent = `Filled ${fields.length} fields from the listing${p.mls ? ` (MLS® ${p.mls})` : ''}.${p.sqftRange ? ` Size given as ${p.sqftRange} sq ft; using the midpoint.` : ''}`;
+  $('#listingMsg').textContent = `Filled ${fields.length} fields from the listing${p.mls ? ` (MLS® ${p.mls})` : ''}.${p.sqftRange ? ` Size given as ${p.sqftRange} sq ft; using the midpoint.` : ''}${p.yearBuiltNote ? ' ' + p.yearBuiltNote : ''}`;
   renderMarket(); renderHazards();
 });
 $('#shareBtn').addEventListener('click', async () => {

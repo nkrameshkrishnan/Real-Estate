@@ -87,9 +87,34 @@ export function parseListingText(text) {
   const fee = after('Maintenance Fees'); if (fee) out.fee = money(fee);
   const dom = (after('Time on REALTOR.ca') || '').match(/(\d+)\s*day/i); if (dom) out.dom = Number(dom[1]);
   const built = after('Built in') || after('Year Built'); if (built && /\d{4}/.test(built)) out.yearBuilt = Number(built.match(/\d{4}/)[0]);
-  const age = after('Age'); if (!out.yearBuilt && age) { const a = age.match(/(\d+)\s*(?:-\s*(\d+))?/); if (a) out.ageRange = age; }
+  const age = after('Age') || after('Approximate Age');
+  if (!out.yearBuilt && age) { const est = yearFromAge(age); if (est) { out.yearBuilt = est.year; out.ageRange = est.range; out.yearBuiltNote = est.note; } }
   const brokerage = t.match(/\n\s*([^\n]+)\n\s*Brokerage\s*\n/i); if (brokerage) out.brokerage = brokerage[1].trim();
   const board = t.match(/Data provided by:\s*([^\n]+)/i); if (board) out.board = board[1].trim();
   const url = t.match(/https:\/\/www\.realtor\.ca\/real-estate\/\d+\/[a-z0-9-]+/i); if (url) out.url = url[0];
   return out;
+}
+
+// Many Ontario listings (TRREB especially) give an age range like "31-50", "6-15", "100+" or "New"
+// instead of a year built. Convert it to a year so the age-based hazard checks can run.
+// We use the OLDEST year in the range on purpose: asbestos, lead paint and wiring risks rise with age,
+// so the oldest plausible year avoids understating them. Returns null if the text isn't an age.
+export function yearFromAge(text, now = new Date().getFullYear()) {
+  const t = String(text || '').trim().toLowerCase();
+  if (!t) return null;
+  if (/\b(new|under construction|pre-?construction)\b/.test(t) && !/\d/.test(t)) {
+    return { year: now, range: 'New', note: `Age given as “New”; using ${now}.` };
+  }
+  const m = t.match(/^(\d{1,3})\s*(?:-|–|to)\s*(\d{1,3})(?:\s*(?:yrs?|years?))?$/) || t.match(/^(\d{1,3})\s*\+(?:\s*(?:yrs?|years?))?$/) || t.match(/^(\d{1,3})\s*(?:yrs?|years?)$/);
+  if (!m) return null;
+  const lo = Number(m[1]), hi = m[2] != null ? Number(m[2]) : lo;
+  if (hi < lo || hi > 250) return null;
+  const year = now - hi, newest = now - lo;
+  const plus = /\+/.test(t);
+  const range = m[2] != null ? `${lo}–${hi} years` : plus ? `${lo}+ years` : `${lo} years`;
+  const note = m[2] != null
+    ? `Age given as ${range} (built c. ${year}–${newest}); using ${year}, the oldest in the range, so age-based risks aren’t understated. Replace with the exact year if you have it.`
+    : plus ? `Age given as ${range}; using ${year} (built ${year} or earlier). Replace with the exact year if you have it.`
+    : `Age given as ${range}; using ${year}.`;
+  return { year, range, note };
 }
