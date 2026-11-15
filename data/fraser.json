@@ -1,0 +1,18 @@
+{
+ "_readme": "Fraser Institute ratings are not available via API. Add schools you care about here (from compareschoolrankings.org) or enter them in the app (saved in your browser). Match is by school name + city (case-insensitive).",
+ "edition": {
+  "elementary": "2025",
+  "secondary": ""
+ },
+ "schools": [
+  {
+   "name": "Example Public School",
+   "city": "Toronto",
+   "level": "Elementary",
+   "rating": 7.5,
+   "rank": "500/3052",
+   "trend": "",
+   "url": "https://www.compareschoolrankings.org"
+  }
+ ]
+}

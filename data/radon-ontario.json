@@ -1,0 +1,415 @@
+{
+ "source": "Health Canada Cross-Canada Survey of Radon Concentrations in Homes, final Ontario dataset (2009-2013), as published by Cancer Care Ontario (Ontario Cancer System Quality Index / Prevention System Quality Index)",
+ "url": "https://www.cancercareontario.ca/fr/node/49416",
+ "note": "Percent of tested homes per public health unit. Small samples in some units (e.g. 0.0% in York, Peel, Durham) do not mean zero risk. Every home should be tested (3-month long-term test).",
+ "ontario": {
+  "ge200": 8.2,
+  "r100_200": 17.0
+ },
+ "units": {
+  "York Region": [
+   0.0,
+   4.2
+  ],
+  "Windsor-Essex County": [
+   13.8,
+   30.3
+  ],
+  "Wellington-Dufferin-Guelph": [
+   11.1,
+   14.1
+  ],
+  "Region of Waterloo": [
+   4.0,
+   6.9
+  ],
+  "Toronto": [
+   2.7,
+   16.2
+  ],
+  "Timiskaming": [
+   7.8,
+   16.5
+  ],
+  "Thunder Bay District": [
+   12.0,
+   17.6
+  ],
+  "Sudbury and District": [
+   5.2,
+   25.8
+  ],
+  "Simcoe Muskoka District": [
+   0.9,
+   11.0
+  ],
+  "Renfrew County and District": [
+   9.0,
+   24.0
+  ],
+  "Porcupine": [
+   1.0,
+   13.5
+  ],
+  "Peterborough County-City": [
+   9.8,
+   25.0
+  ],
+  "Perth District": [
+   12.0,
+   22.2
+  ],
+  "Peel": [
+   0.0,
+   6.7
+  ],
+  "Oxford County": [
+   11.5,
+   22.1
+  ],
+  "Ottawa": [
+   6.3,
+   12.5
+  ],
+  "Northwestern": [
+   13.8,
+   21.0
+  ],
+  "North Bay Parry Sound District": [
+   1.9,
+   4.9
+  ],
+  "Niagara Region": [
+   2.0,
+   10.0
+  ],
+  "Middlesex-London": [
+   1.8,
+   10.9
+  ],
+  "Leeds, Grenville and Lanark District": [
+   19.4,
+   22.2
+  ],
+  "Lambton": [
+   8.4,
+   19.1
+  ],
+  "Kingston, Frontenac and Lennox & Addington": [
+   11.1,
+   26.3
+  ],
+  "Huron County": [
+   11.3,
+   22.6
+  ],
+  "Hastings and Prince Edward Counties": [
+   12.1,
+   16.2
+  ],
+  "Hamilton": [
+   5.0,
+   23.0
+  ],
+  "Halton Region": [
+   4.1,
+   8.2
+  ],
+  "Haliburton, Kawartha, Pine Ridge District": [
+   6.1,
+   14.3
+  ],
+  "Haldimand-Norfolk": [
+   2.6,
+   10.3
+  ],
+  "Grey Bruce": [
+   11.2,
+   12.2
+  ],
+  "Elgin-St. Thomas": [
+   7.5,
+   17.2
+  ],
+  "Eastern Ontario": [
+   6.1,
+   18.2
+  ],
+  "Durham Region": [
+   0.0,
+   4.2
+  ],
+  "Chatham-Kent": [
+   18.4,
+   21.4
+  ],
+  "Brant County": [
+   10.4,
+   21.9
+  ],
+  "Algoma": [
+   8.6,
+   10.8
+  ]
+ },
+ "match": {
+  "Toronto": [
+   "toronto",
+   "north york",
+   "scarborough",
+   "etobicoke",
+   "east york",
+   "york"
+  ],
+  "Peel": [
+   "peel",
+   "mississauga",
+   "brampton",
+   "caledon"
+  ],
+  "York Region": [
+   "regional municipality of york",
+   "york region",
+   "vaughan",
+   "markham",
+   "richmond hill",
+   "newmarket",
+   "aurora",
+   "king",
+   "whitchurch-stouffville",
+   "stouffville",
+   "east gwillimbury",
+   "georgina",
+   "woodbridge",
+   "thornhill",
+   "maple",
+   "unionville"
+  ],
+  "Halton Region": [
+   "halton",
+   "oakville",
+   "burlington",
+   "milton",
+   "halton hills",
+   "georgetown",
+   "acton"
+  ],
+  "Durham Region": [
+   "durham",
+   "pickering",
+   "ajax",
+   "whitby",
+   "oshawa",
+   "clarington",
+   "bowmanville",
+   "courtice",
+   "uxbridge",
+   "scugog",
+   "port perry",
+   "brock"
+  ],
+  "Hamilton": [
+   "hamilton",
+   "stoney creek",
+   "ancaster",
+   "dundas",
+   "waterdown",
+   "flamborough",
+   "glanbrook"
+  ],
+  "Ottawa": [
+   "ottawa",
+   "kanata",
+   "nepean",
+   "orleans",
+   "barrhaven",
+   "gloucester",
+   "stittsville"
+  ],
+  "Region of Waterloo": [
+   "waterloo",
+   "kitchener",
+   "cambridge",
+   "woolwich",
+   "wilmot",
+   "wellesley"
+  ],
+  "Wellington-Dufferin-Guelph": [
+   "guelph",
+   "wellington",
+   "dufferin",
+   "orangeville",
+   "fergus",
+   "shelburne"
+  ],
+  "Middlesex-London": [
+   "london",
+   "middlesex",
+   "strathroy"
+  ],
+  "Windsor-Essex County": [
+   "windsor",
+   "essex",
+   "lasalle",
+   "tecumseh",
+   "amherstburg",
+   "leamington",
+   "kingsville",
+   "lakeshore"
+  ],
+  "Simcoe Muskoka District": [
+   "simcoe county",
+   "barrie",
+   "orillia",
+   "innisfil",
+   "bradford",
+   "collingwood",
+   "wasaga beach",
+   "muskoka",
+   "bracebridge",
+   "huntsville",
+   "gravenhurst",
+   "alliston",
+   "new tecumseth",
+   "midland"
+  ],
+  "Kingston, Frontenac and Lennox & Addington": [
+   "kingston",
+   "frontenac",
+   "lennox",
+   "napanee"
+  ],
+  "Niagara Region": [
+   "niagara",
+   "st. catharines",
+   "st catharines",
+   "welland",
+   "thorold",
+   "grimsby",
+   "lincoln",
+   "fort erie",
+   "port colborne",
+   "pelham",
+   "niagara-on-the-lake"
+  ],
+  "Sudbury and District": [
+   "sudbury",
+   "manitoulin"
+  ],
+  "Thunder Bay District": [
+   "thunder bay"
+  ],
+  "Peterborough County-City": [
+   "peterborough"
+  ],
+  "Brant County": [
+   "brant",
+   "brantford"
+  ],
+  "Lambton": [
+   "lambton",
+   "sarnia"
+  ],
+  "Chatham-Kent": [
+   "chatham-kent",
+   "chatham"
+  ],
+  "Hastings and Prince Edward Counties": [
+   "hastings",
+   "belleville",
+   "quinte west",
+   "prince edward"
+  ],
+  "Oxford County": [
+   "oxford",
+   "woodstock",
+   "ingersoll",
+   "tillsonburg"
+  ],
+  "Perth District": [
+   "perth county",
+   "stratford",
+   "st. marys"
+  ],
+  "Elgin-St. Thomas": [
+   "elgin",
+   "st. thomas",
+   "st thomas",
+   "aylmer"
+  ],
+  "Grey Bruce": [
+   "grey county",
+   "bruce county",
+   "owen sound",
+   "grey",
+   "bruce"
+  ],
+  "North Bay Parry Sound District": [
+   "north bay",
+   "parry sound",
+   "nipissing"
+  ],
+  "Porcupine": [
+   "timmins",
+   "cochrane",
+   "porcupine"
+  ],
+  "Algoma": [
+   "algoma",
+   "sault ste. marie",
+   "sault ste marie",
+   "elliot lake"
+  ],
+  "Eastern Ontario": [
+   "cornwall",
+   "stormont",
+   "prescott and russell",
+   "hawkesbury",
+   "glengarry",
+   "dundas county"
+  ],
+  "Leeds, Grenville and Lanark District": [
+   "leeds",
+   "grenville",
+   "lanark",
+   "brockville",
+   "smiths falls",
+   "carleton place",
+   "perth"
+  ],
+  "Renfrew County and District": [
+   "renfrew",
+   "pembroke",
+   "arnprior"
+  ],
+  "Northwestern": [
+   "kenora",
+   "dryden",
+   "rainy river",
+   "fort frances"
+  ],
+  "Haliburton, Kawartha, Pine Ridge District": [
+   "kawartha lakes",
+   "lindsay",
+   "haliburton",
+   "northumberland",
+   "cobourg",
+   "port hope"
+  ],
+  "Haldimand-Norfolk": [
+   "haldimand",
+   "norfolk",
+   "simcoe",
+   "caledonia"
+  ],
+  "Huron County": [
+   "huron county",
+   "goderich"
+  ],
+  "Timiskaming": [
+   "timiskaming",
+   "temiskaming shores",
+   "kirkland lake"
+  ]
+ }
+}

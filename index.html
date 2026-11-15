@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ontario Home Insight — property due-diligence report</title>
+  <meta name="description" content="Enter an Ontario address or MLS® listing link to see transit access, neighbourhood safety, nearby schools with Fraser ratings, market value and negotiation range, and property hazards.">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 15 16 5l12 10v12H4z' fill='%231f5f8b'/%3E%3Crect x='13' y='18' width='6' height='9' fill='%23fff'/%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="./"><span class="logo" aria-hidden="true">⌂</span> Ontario Home Insight</a>
+      <nav class="topnav" aria-label="Report sections">
+        <a href="#transit">Transit</a><a href="#safety">Safety</a><a href="#schools">Schools</a><a href="#market">Market</a><a href="#hazards">Hazards</a>
+      </nav>
+      <button class="icon-btn" id="settingsBtn" type="button" aria-label="Data sources and settings" title="Data sources & settings">⚙</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <h1>Know the home before you offer.</h1>
+        <p class="lede">An Ontario due-diligence report from an address or an MLS® listing: transit, safety, schools &amp; Fraser ratings, price range, and property hazards.</p>
+        <form id="searchForm" class="search" autocomplete="off">
+          <label class="sr-only" for="q">Address, REALTOR.ca link or MLS® number</label>
+          <input id="q" name="q" type="text" placeholder="e.g. 100 Queen St W, Toronto  ·  or paste a REALTOR.ca listing link" required>
+          <button type="submit" class="btn primary" id="goBtn">Get report</button>
+        </form>
+        <p class="hint">Works across Ontario. Safety index currently uses Toronto Police open data; other areas link to their police service. <a href="#" id="exampleLink">Try an example</a></p>
+        <div id="recent" class="recent"></div>
+      </div>
+    </section>
+
+    <div id="status" class="wrap status" role="status" aria-live="polite"></div>
+
+    <div id="report" class="wrap report" hidden>
+      <section class="report-head card">
+        <div>
+          <p class="eyebrow" id="locMuni"></p>
+          <h2 id="locTitle"></h2>
+          <p class="muted small" id="locMeta"></p>
+        </div>
+        <div class="head-actions">
+          <button class="btn" type="button" id="shareBtn">Copy link</button>
+          <button class="btn" type="button" onclick="window.print()">Print / PDF</button>
+        </div>
+      </section>
+
+      <section class="scores" id="scores" aria-label="Summary"></section>
+
+      <div class="grid-2">
+        <section class="card map-card"><div id="map" aria-label="Map of the property and nearby features"></div>
+          <div class="legend small"><span><i class="dot home"></i>Property</span><span><i class="dot school"></i>School</span><span><i class="dot rapid"></i>Rapid transit</span><span><i class="line power"></i>Power line</span><span><i class="line water"></i>Watercourse</span></div>
+        </section>
+        <section class="card" id="listing">
+          <h3>MLS® listing details</h3>
+          <p class="muted small">Pulled from your REALTOR.ca DDF® feed when configured, otherwise enter them from the listing. Saved in this browser only.</p>
+          <form id="listingForm" class="form-grid">
+            <label>MLS® number<input name="mls" placeholder="e.g. C12345678"></label>
+            <label>List price ($)<input name="listPrice" inputmode="numeric" placeholder="899000"></label>
+            <label>Property type
+              <select name="type">
+                <option value="detached">Detached</option><option value="semi">Semi-detached</option><option value="townhouse">Freehold townhouse</option><option value="condoTownhouse">Condo townhouse</option><option value="condoApt">Condo apartment</option>
+              </select></label>
+            <label>Year built<input name="yearBuilt" inputmode="numeric" placeholder="1965"></label>
+            <label>Living area (sq ft)<input name="sqft" inputmode="numeric" placeholder="1450"></label>
+            <label>Days on market<input name="dom" inputmode="numeric" placeholder="21"></label>
+            <label>Price reductions<input name="reductions" inputmode="numeric" placeholder="0"></label>
+            <label>Bedrooms<input name="beds" inputmode="numeric"></label>
+            <label>Annual taxes ($)<input name="taxes" inputmode="numeric"></label>
+            <label>Condo fee ($/mo)<input name="fee" inputmode="numeric"></label>
+            <div class="form-actions">
+              <button class="btn primary" type="submit">Update report</button>
+              <button class="btn" type="button" id="ddfBtn">Fetch from DDF®</button>
+              <a class="btn ghost" id="realtorLink" href="https://www.realtor.ca/" target="_blank" rel="noopener">Open REALTOR.ca</a>
+            </div>
+          </form>
+          <p class="small" id="listingMsg"></p>
+        </section>
+      </div>
+
+      <section class="card" id="transit"><h3>Transit availability</h3><div class="body"><div class="skeleton"></div></div></section>
+      <section class="card" id="safety"><h3>Neighbourhood safety index</h3><div class="body"><div class="skeleton"></div></div></section>
+      <section class="card" id="schools"><h3>Schools near this address</h3><div class="body"><div class="skeleton"></div></div></section>
+      <section class="card" id="market"><h3>Market value &amp; negotiation range</h3><div class="body"><div class="skeleton"></div></div></section>
+      <section class="card" id="hazards"><h3>Property &amp; environmental hazards</h3><div class="body"><div class="skeleton"></div></div></section>
+
+      <p class="disclaimer small">This report is informational and built from open data that can be incomplete or out of date. It is not a home inspection, appraisal, legal or financial advice. Confirm school boundaries with the school board, hazards with a licensed home inspector and your conservation authority, and pricing with a REALTOR®. The trademarks MLS®, Multiple Listing Service® and the associated logos identify professional services rendered by REALTOR® members of CREA. REALTOR® is a trademark controlled by CREA.</p>
+    </div>
+  </main>
+
+  <dialog id="settingsDlg">
+    <form method="dialog" class="dlg">
+      <h3>Data sources &amp; settings</h3>
+      <label>REALTOR.ca DDF® proxy URL
+        <input id="ddfProxy" type="url" placeholder="https://ddf-proxy.your-account.workers.dev">
+      </label>
+      <p class="small muted">Optional. DDF® access requires data-feed credentials from a REALTOR® (CREA member). Deploy <code>proxy/ddf-worker.js</code> to Cloudflare Workers with your feed credentials as secrets, then paste its URL here. Credentials never go in this site.</p>
+      <h4>Sources used</h4>
+      <ul class="small sources">
+        <li>Geocoding &amp; map features: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (Nominatim, Overpass API)</li>
+        <li>Safety: <a href="https://data.torontopolice.on.ca/" target="_blank" rel="noopener">Toronto Police Service Public Safety Data Portal</a></li>
+        <li>Schools: <a href="https://data.ontario.ca/dataset/ontario-public-school-contact-information" target="_blank" rel="noopener">Ontario publicly funded schools list</a> (Open Government Licence – Ontario); ratings from <a href="https://www.compareschoolrankings.org/" target="_blank" rel="noopener">Fraser Institute</a> (entered by you)</li>
+        <li>Flood/erosion: TRCA, LSRCA, Kawartha &amp; Otonabee Conservation regulated-area layers</li>
+        <li>Radon: Health Canada Cross-Canada Survey (Ontario dataset, via Cancer Care Ontario)</li>
+        <li>Market: TRREB Market Watch (see <code>data/market.json</code>)</li>
+      </ul>
+      <div class="form-actions"><button class="btn" value="cancel">Cancel</button><button class="btn primary" id="saveSettings" value="save">Save</button></div>
+    </form>
+  </dialog>
+
+  <footer class="footer"><div class="wrap small muted">Ontario Home Insight · static site, no tracking · data stays in your browser</div></footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

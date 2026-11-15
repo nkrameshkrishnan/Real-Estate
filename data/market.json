@@ -1,0 +1,23 @@
+{
+ "source": "TRREB Market Watch, October 2026 (TRREB MLS\u00ae System sales)",
+ "url": "https://trreb.ca/wp-content/files/market-stats/market-watch/mw2610.pdf",
+ "period": "2026-10",
+ "area": "TRREB market area (GTA)",
+ "note": "Board-wide averages only. Replace/extend with district-level figures from TRREB Community Market Reports or your local board. Outside the GTA, update this file with your local real estate board's figures.",
+ "averagePrice": {
+  "all": 1024108,
+  "detached": 1310627,
+  "semi": 1024907,
+  "townhouse": 905385,
+  "condoTownhouse": 683728,
+  "condoApt": 621400
+ },
+ "condoApt416": 659214,
+ "condoApt905": 539094,
+ "yoy": {
+  "all": -2.7,
+  "hpiComposite": -4.3
+ },
+ "marketCondition": "balanced",
+ "communityReports": "https://trreb.ca/market-data/community-reports/"
+}

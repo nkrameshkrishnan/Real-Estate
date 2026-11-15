@@ -1,0 +1,24 @@
+name: Refresh Ontario school list
+on:
+  schedule:
+    - cron: '17 6 1 * *'   # monthly
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download latest publicly funded schools list
+        run: |
+          URL=$(curl -s "https://data.ontario.ca/api/3/action/package_show?id=ontario-public-school-contact-information" \
+            | python3 -c "import json,sys; r=json.load(sys.stdin)['result']['resources']; print(next(x['url'] for x in r if x['format'].upper()=='TXT' and x['url'].endswith('_en.txt')))")
+          mkdir -p /tmp/src && curl -sSL -o /tmp/src/schools.txt "$URL"
+          python3 -I scripts/build_schools.py /tmp/src/schools.txt data/schools-on.json
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/schools-on.json
+          git diff --cached --quiet || git commit -m "Refresh Ontario school list" && git push
