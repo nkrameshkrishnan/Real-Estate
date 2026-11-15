@@ -150,13 +150,60 @@ export async function schoolsNear(loc, osm) {
     secondary: uniq.filter(s => s.level === 'Secondary').slice(0, 8),
     other: uniq.filter(s => s.level !== 'Elementary' && s.level !== 'Secondary').slice(0, 6),
     meta: idx.meta,
+    all: uniq, // every school within 3 km, for picking the ones this address is zoned for
     fraserMeta: fraser.meta,
     osmAvailable: !!osm,
   };
 }
 
+// Search the provincial list by name, for a designated school that is farther than 3 km or not on the map
+export async function searchSchools(q, loc) {
+  const k = normName(q);
+  if (k.length < 3) return [];
+  const [idx, fraser] = await Promise.all([getIndex(), getFraserIndex()]);
+  return idx.all
+    .filter(p => normName(p.n).includes(k))
+    .sort((a, b) => (cityCompatible(b.c, loc.municipality) - cityCompatible(a.c, loc.municipality)) || a.n.localeCompare(b.n))
+    .slice(0, 8)
+    .map(p => {
+      const has = p.y != null;
+      return provRecord(p, loc, fraser, has ? haversine(loc.lat, loc.lon, p.y, p.x) : null, has ? p.y : null, has ? p.x : null);
+    });
+}
+
+// Which boards serve this address: for each school system, the board running most of the nearby schools
+const SYSTEMS = [
+  { key: 'en-pub', label: 'English public', test: s => s.type === 'Public' && s.lang !== 'French' },
+  { key: 'en-cat', label: 'English Catholic', test: s => s.type === 'Catholic' && s.lang !== 'French' },
+  { key: 'fr-pub', label: 'French public', test: s => s.type === 'Public' && s.lang === 'French' },
+  { key: 'fr-cat', label: 'French Catholic', test: s => s.type === 'Catholic' && s.lang === 'French' },
+];
+export function boardsFor(schools) {
+  const out = [];
+  for (const sys of SYSTEMS) {
+    const counts = new Map();
+    for (const s of schools) if (s.publiclyFunded && s.board && sys.test(s)) {
+      const c = counts.get(s.board) || { board: s.board, website: s.boardWebsite, n: 0, nearest: Infinity };
+      c.n++; c.nearest = Math.min(c.nearest, s.d); counts.set(s.board, c);
+    }
+    const best = [...counts.values()].sort((a, b) => b.n - a.n || a.nearest - b.nearest)[0];
+    if (best) out.push({ system: sys.label, board: best.board, locator: boardLocator(best.board), website: best.website });
+  }
+  return out;
+}
+
 // Board "find your designated school" tools (catchment checks need the board's own lookup)
+// Each board's own "find your school by address" tool, where one is known; other boards link to their website
+const LOCATORS = [
+  [/^toronto dsb$/i, 'https://www.tdsb.on.ca/Find-your/School/By-Home-Address'],
+  [/^toronto cdsb$/i, 'https://www.tcdsb.org/findmyschool'],
+  [/^york region dsb$/i, 'https://schoollocator.yrdsb.ca/'],
+  [/^halton dsb$/i, 'https://www.hdsb.ca/schools/find-local-school'],
+  [/^durham dsb$/i, 'https://www.ddsb.ca/en/our-schools/find-a-school.aspx'],
+  [/^ottawa csb$/i, 'https://www.ocsb.ca/our-schools/'],
+  [/viamonde/i, 'https://csviamonde.ca/nos-ecoles/trouver-une-ecole/'],
+];
 export function boardLocator(board) {
-  if (/toronto dsb/i.test(board)) return { name: 'TDSB — Find your school by address', url: 'https://www.tdsb.on.ca/Find-your/School/By-Home-Address' };
-  return null;
+  const hit = LOCATORS.find(([re]) => re.test(String(board || '').trim()));
+  return hit ? { name: `${board}: find your school by address`, url: hit[1] } : null;
 }
