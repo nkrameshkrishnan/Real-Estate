@@ -205,7 +205,14 @@ function renderSchools(r) {
   const rated = all.filter(s => s.fraser?.rating);
   const best = rated.sort((a, b) => b.fraser.rating - a.fraser.rating)[0];
   tile('schools', 'Schools', `${r.elementary.length + r.secondary.length}`, best ? `Top Fraser: ${Number(best.fraser.rating).toFixed(1)} (${esc(best.name)})` : `${r.elementary.length} elementary · ${r.secondary.length} secondary within 3 km`, rated.length ? (best.fraser.rating >= 7 ? 'good' : best.fraser.rating >= 5.5 ? 'ok' : 'warn') : 'unknown', 'schools');
-  const table = (title, rows) => rows.length ? `<h4 style="margin-top:14px">${title}</h4><div class="table-wrap"><table><thead><tr><th>School</th><th class="num">Distance</th><th class="num">Fraser rating</th></tr></thead><tbody>${rows.map(schoolRow).join('')}</tbody></table></div>` : '';
+  // Highest Fraser rating first; schools without a rating follow, nearest first
+  const byRating = rows => [...rows].sort((x, y) => {
+    const num = v => (v == null || v === '' ? NaN : Number(v)), rx = num(x.fraser?.rating), ry = num(y.fraser?.rating);
+    const hx = Number.isFinite(rx), hy = Number.isFinite(ry);
+    if (hx !== hy) return hx ? -1 : 1;
+    return hx && ry !== rx ? ry - rx : x.d - y.d;
+  });
+  const table = (title, rows) => rows.length ? `<h4 style="margin-top:14px">${title} <span class="small muted" style="font-weight:400">· highest Fraser rating first, then unrated by distance</span></h4><div class="table-wrap"><table><thead><tr><th>School</th><th class="num">Distance</th><th class="num" aria-sort="descending">Fraser rating</th></tr></thead><tbody>${byRating(rows).map(schoolRow).join('')}</tbody></table></div>` : '';
   section('schools', `
     <div class="callout"><strong>Nearest is not always designated.</strong> Attendance boundaries are set by each board (public, Catholic, French-language). Confirm with the board’s address lookup${r.elementary.some(s => /toronto dsb/i.test(s.board)) ? ' — e.g. <a href="https://www.tdsb.on.ca/Find-your/School/By-Home-Address" target="_blank" rel="noopener">TDSB Find your school</a>' : ''} or the <a href="https://www.ontario.ca/page/find-your-school" target="_blank" rel="noopener">Ontario school information finder</a>.</div>
     ${table('Elementary', r.elementary)}${table('Secondary', r.secondary)}${table('Other / unclassified', r.other)}
