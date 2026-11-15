@@ -95,36 +95,55 @@ export function fraserFor(fi, names, cities, level) {
 
 export const fraserSearchUrl = name => `https://www.google.com/search?q=${encodeURIComponent(`site:compareschoolrankings.org "${name}"`)}`;
 
+function provRecord(p, loc, fraser, d, lat, lon, extra = {}) {
+  const level = p.lvl || 'Unknown';
+  const cities = [p.c, loc.community, loc.municipality, loc.address?.suburb, loc.address?.city_district].filter(Boolean);
+  return {
+    id: 'on:' + p.id, provId: p.id, name: p.n, osmName: '', lat, lon, d, level,
+    board: p.b, type: p.t, lang: p.lang, grades: p.g, special: p.sp && p.sp !== 'Not applicable' ? p.sp : '',
+    city: p.c, website: p.w, boardWebsite: p.bw, phone: p.ph, address: `${p.st}, ${p.c} ${p.pc}`,
+    publiclyFunded: true, isPrivate: false,
+    fraser: fraserFor(fraser, [p.n], cities, level), ...extra,
+  };
+}
+
+// osm may be null when Overpass is unavailable: publicly funded schools still come from the bundled list.
 export async function schoolsNear(loc, osm) {
   const [idx, fraser] = await Promise.all([getIndex(), getFraserIndex()]);
-  const list = osm.schools
-    .map(s => {
-      const prov = matchProvincial(idx, s, loc);
-      const t = s.tags || {};
-      const name = prov?.n || s.name;
-      const city = prov?.c || t['addr:city'] || loc.municipality;
-      const level = guessLevel(name, t, prov);
-      const cities = [prov?.c, t['addr:city'], loc.community, loc.municipality, loc.address?.suburb, loc.address?.city_district].filter(Boolean);
-      const isPrivate = !prov && /private|independent/i.test(`${t.operator || ''} ${t['operator:type'] || ''} ${t['school:type'] || ''}`);
-      return {
-        id: s.id, name, osmName: s.name, lat: s.lat, lon: s.lon,
-        d: haversine(loc.lat, loc.lon, s.lat, s.lon),
-        level,
-        board: prov?.b || t.operator || '', type: prov?.t || (isPrivate ? 'Private' : ''),
-        lang: prov?.lang || '', grades: prov?.g || t.grades || '', special: prov?.sp && prov.sp !== 'Not applicable' ? prov.sp : '',
-        city, website: prov?.w || t.website || '', boardWebsite: prov?.bw || '', phone: prov?.ph || '',
-        address: prov ? `${prov.st}, ${prov.c} ${prov.pc}` : [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' '),
-        publiclyFunded: !!prov, isPrivate,
-        fraser: fraserFor(fraser, [name, s.name, t.official_name].filter(Boolean), cities, level),
-      };
-    })
-    // ignore colleges/admin buildings that slipped in, keep within 3 km
-    .filter(s => s.d <= 3000 && !/board office|education centre|adult/i.test(s.name))
-    .sort((a, b) => a.d - b.d);
-
-  // De-duplicate (OSM can have node + building for the same school)
-  const uniq = [];
-  for (const s of list) if (!uniq.some(u => normName(u.name) === normName(s.name) && Math.abs(u.d - s.d) < 400)) uniq.push(s);
+  const list = [];
+  const usedProv = new Set();
+  // 1. Publicly funded schools with bundled coordinates
+  for (const p of idx.all) {
+    if (p.y == null) continue;
+    if (Math.abs(p.y - loc.lat) > 0.03 || Math.abs(p.x - loc.lon) > 0.045) continue;
+    const d = haversine(loc.lat, loc.lon, p.y, p.x);
+    if (d > 3000) continue;
+    usedProv.add(p.id);
+    list.push(provRecord(p, loc, fraser, d, p.y, p.x));
+  }
+  // 2. OpenStreetMap schools: fills gaps (private/independent schools, or schools without bundled coordinates)
+  for (const s of osm?.schools || []) {
+    const prov = matchProvincial(idx, s, loc);
+    if (prov && usedProv.has(prov.id)) continue;
+    const d = haversine(loc.lat, loc.lon, s.lat, s.lon);
+    if (prov) { usedProv.add(prov.id); list.push(provRecord(prov, loc, fraser, d, s.lat, s.lon)); continue; }
+    const t = s.tags || {};
+    const level = guessLevel(s.name, t, null);
+    const cities = [t['addr:city'], loc.community, loc.municipality, loc.address?.suburb].filter(Boolean);
+    const isPrivate = /private|independent/i.test(`${t.operator || ''} ${t['operator:type'] || ''} ${t['school:type'] || ''}`);
+    list.push({
+      id: s.id, name: s.name, osmName: s.name, lat: s.lat, lon: s.lon, d, level,
+      board: t.operator || '', type: isPrivate ? 'Private' : '', lang: '', grades: t.grades || '', special: '',
+      city: t['addr:city'] || loc.municipality, website: t.website || '', boardWebsite: '', phone: '',
+      address: [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' '),
+      publiclyFunded: false, isPrivate,
+      fraser: fraserFor(fraser, [s.name, t.official_name].filter(Boolean), cities, level),
+    });
+  }
+  const uniq = list
+    .filter(s => s.d <= 3000 && !/board office|education centre|adult|continuing education/i.test(`${s.name} ${s.special}`))
+    .sort((a, b) => a.d - b.d)
+    .filter((s, i, arr) => arr.findIndex(u => normName(u.name) === normName(s.name) && Math.abs(u.d - s.d) < 400) === i);
 
   return {
     elementary: uniq.filter(s => s.level === 'Elementary').slice(0, 10),
@@ -132,6 +151,7 @@ export async function schoolsNear(loc, osm) {
     other: uniq.filter(s => s.level !== 'Elementary' && s.level !== 'Secondary').slice(0, 6),
     meta: idx.meta,
     fraserMeta: fraser.meta,
+    osmAvailable: !!osm,
   };
 }
 

@@ -1,6 +1,6 @@
 import { $, esc, fmtMoney, fmtDist, badge, store } from './util.js';
 import { resolveLocation } from './geocode.js';
-import { fetchOSM } from './overpass.js';
+import { fetchTransitSchools, fetchHazardsOSM } from './overpass.js';
 import { scoreTransit } from './transit.js';
 import { safetyFor } from './safety.js';
 import { schoolsNear, fraserKey, boardLocator } from './schools.js';
@@ -8,7 +8,7 @@ import { floodCheck, powerLineCheck, radonCheck, ageRisks, vegetationCheck, gutt
 import { loadMarket, negotiate, getComps, setComps, parseCompsCsv, TYPE_LABEL } from './market.js';
 import { settings, fetchDDF, getListing, saveListing, parseListingText } from './mls.js';
 
-const state = { loc: null, osm: null, map: null, layers: null, results: {} };
+const state = { loc: null, osm: null, hz: null, map: null, layers: null, results: {} };
 const MLS_RE = /^[A-Z]?\d{7,9}$/i;
 const EXAMPLE = '25 The Esplanade, Toronto';
 
@@ -59,7 +59,11 @@ function tile(key, label, value, sub, level, href) {
 }
 
 function section(id, html) { $(`#${id} .body`).innerHTML = html; }
-function sectionError(id, e) { section(id, `<p>${badge('unknown', 'Unavailable')} ${esc(e.message || e)}</p><p class="small muted">Open data services occasionally rate-limit; try again in a minute.</p>`); }
+function sectionError(id, e, retry) {
+  section(id, `<p>${badge('unknown', 'Unavailable')} ${esc(e.message || e)}</p><p class="small muted">The free OpenStreetMap servers are sometimes overloaded. Results are cached for 14 days once they load.</p>${retry ? '<button class="btn" type="button" data-retry>Retry</button>' : ''}`);
+  const b = document.querySelector(`#${id} [data-retry]`);
+  if (b && retry) b.onclick = () => { section(id, '<div class="skeleton"></div>'); retry(); };
+}
 
 // ---------- TRANSIT ----------
 function renderTransit(t) {
@@ -200,7 +204,7 @@ function hazardCard(title, level, label, body) {
   return `<div class="hazard"><div class="hazard-head"><h4>${esc(title)}</h4>${badge(level, label)}</div>${body}</div>`;
 }
 async function renderHazards() {
-  const loc = state.loc, osm = state.osm, l = listingFromForm();
+  const loc = state.loc, osm = state.hz, l = listingFromForm();
   const isCondo = /^condo/.test(l.type);
   const r = state.results;
   const parts = [];
@@ -212,6 +216,7 @@ async function renderHazards() {
       ${f.level === 'bad' ? `<p class="small"><strong>What this means:</strong> the property falls within the mapped regulation limit, which is the greatest extent of the flood plain, valley slope/erosion hazard and wetland setbacks (plus a 15–30 m buffer). It does not by itself mean the building floods. Ask the conservation authority which hazard applies; development or additions here need a permit.${isCondo ? ' For a condo, check the status certificate and reserve fund study for past water events, and check that the unit isn’t below grade.' : ' Ask about past basement water and check flood insurance availability and price.'}</p>` : ''}
       <p class="sub">Conservation Authority regulation limits include river/shoreline flood and erosion hazards and wetlands (O. Reg. 41/24). ${f.covered ? '' : 'This address may be outside the layers checked here — '}Confirm with your <a href="https://conservationontario.ca/" target="_blank" rel="noopener">local conservation authority</a>, and ask the seller about basement water, sump pump and backwater valve; check whether the municipality offers a basement flooding protection subsidy.</p>`));
   } else parts.push(hazardCard('Flood zone / regulated area', 'unknown', 'Checking…', ''));
+  if (!osm) parts.push(hazardCard('Overhead power lines & nearby water', 'unknown', state.results.hzError ? 'Map data busy' : 'Checking…', state.results.hzError ? '<p class="small">The OpenStreetMap servers didn’t answer in time.</p><button class="btn" type="button" id="hzRetry">Retry</button>' : ''));
   if (osm) {
     const p = powerLineCheck(loc, osm);
     parts.push(hazardCard('Overhead power lines', p.level, p.label, `
@@ -234,6 +239,8 @@ async function renderHazards() {
   const gt = guttersCheck(loc, l.yearBuilt, isCondo ? 'condo' : 'house');
   parts.push(hazardCard('Gutters & downspouts', gt.level, gt.label, `<ul class="small">${gt.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`));
   section('hazards', `<div class="hazard-list">${parts.join('')}</div>`);
+  const hzr = document.getElementById('hzRetry');
+  if (hzr) hzr.onclick = () => { state.results.hzError = false; renderHazards(); state.retryHazards?.(); };
 
   const flagged = parts.filter(p => /badge (bad|warn)/.test(p)).length;
   const severe = parts.filter(p => /badge bad/.test(p)).length;
@@ -262,7 +269,7 @@ async function analyse(input, pending = null) {
     const loc = await resolveLocation(query);
     if (listing) { loc.display = `${listing.address}, ${listing.city} ${listing.postal || ''}`; loc.listingUrl = listing.url; }
     if (pending?.url) loc.listingUrl = pending.url;
-    state.loc = loc; state.osm = null; state.results = {};
+    state.loc = loc; state.osm = null; state.hz = null; state.results = {};
     Object.keys(tiles).forEach(k => delete tiles[k]);
     pushRecent(input.trim());
     history.replaceState(null, '', `#q=${encodeURIComponent(input.trim())}`);
@@ -291,27 +298,36 @@ async function analyse(input, pending = null) {
     status('');
     document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    const osmP = fetchOSM(loc.lat, loc.lon);
     const safetyP = safetyFor(loc);
     const radonP = radonCheck(loc);
     renderMarket();
     renderHazards();
+    runSchools(); // bundled school list renders right away; OSM adds private schools when it arrives
 
     safetyP.then(s => renderSafety(s, loc)).catch(e => { sectionError('safety', e); tile('safety', 'Safety index', '—', 'Unavailable', 'unknown', 'safety'); });
     radonP.then(r => { state.results.radon = r; renderHazards(); }).catch(() => {});
-    osmP.then(async osm => {
+    const runFlood = () => floodCheck(loc, state.hz || { water: [] })
+      .catch(e => ({ level: 'unknown', label: 'Unavailable', layers: [], error: e.message }))
+      .then(f => { if (state.loc === loc) { state.results.flood = f; renderHazards(); } });
+    runFlood();
+
+    const loadTransit = () => fetchTransitSchools(loc.lat, loc.lon).then(osm => {
       if (state.loc !== loc) return;
       state.osm = osm;
       renderTransit(scoreTransit(loc, osm));
       runSchools();
-      renderHazards();
-      state.results.flood = await floodCheck(loc, osm).catch(e => ({ level: 'unknown', label: 'Unavailable', layers: [], error: e.message }));
-      renderHazards();
     }).catch(e => {
-      ['transit', 'schools'].forEach(id => sectionError(id, e));
-      tile('transit', 'Transit score', '—', 'Map data unavailable', 'unknown', 'transit');
-      floodCheck(loc, { water: [] }).then(f => { state.results.flood = f; renderHazards(); });
+      if (state.loc !== loc) return;
+      sectionError('transit', e, loadTransit);
+      tile('transit', 'Transit score', '—', 'Map data busy — retry', 'unknown', 'transit');
     });
+    const loadHazards = () => fetchHazardsOSM(loc.lat, loc.lon).then(hz => {
+      if (state.loc !== loc) return;
+      state.hz = hz; renderHazards(); runFlood();
+    }).catch(() => { if (state.loc === loc) { state.results.hzError = true; renderHazards(); } });
+    state.retryHazards = loadHazards;
+    loadTransit();
+    loadHazards();
   } catch (e) {
     status(e.message || String(e), true);
   } finally {

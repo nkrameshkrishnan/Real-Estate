@@ -27,9 +27,15 @@ with open(src, encoding="utf-8-sig", newline="") as f:
             "w": r["Website"].strip(),
             "bw": r["Board Website"].strip(),
         })
+# Merge coordinates produced by scripts/school_coords.py (if present)
+import os
+coords = json.load(open(os.path.join(os.path.dirname(dst), "school-coords.json"))) if os.path.exists(os.path.join(os.path.dirname(dst), "school-coords.json")) else {}
+for r in rows:
+    c = coords.get(r["id"])
+    if c: r["y"], r["x"], r["gs"] = c[0], c[1], c[2]
 meta = {"source": "Ontario Ministry of Education - Publicly Funded Schools contact list",
         "url": "https://data.ontario.ca/dataset/ontario-public-school-contact-information",
-        "licence": "Open Government Licence - Ontario", "count": len(rows)}
+        "licence": "Open Government Licence - Ontario", "count": len(rows), "withCoords": sum(1 for r in rows if "y" in r)}
 with open(dst, "w", encoding="utf-8") as f:
     json.dump({"meta": meta, "schools": rows}, f, ensure_ascii=False, separators=(",", ":"))
 print(f"wrote {len(rows)} schools to {dst}")
